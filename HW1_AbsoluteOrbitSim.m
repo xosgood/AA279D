@@ -20,11 +20,12 @@ nu = 0;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a^3 / mu);
 t_f = 10 * T;
-tspan = [0, t_f]
+tspan = [0, t_f];
 state0 = [r_ECI_0; v_ECI_0];
 
 options = odeset('RelTol', 1e-3, 'AbsTol', 1e-6);
 [t_out, y_out] = ode113(@func, tspan, state0, options);
+[t_out_J2, y_out_J2] = ode113(@func_J2, tspan, state0, options);
 
 % First, Plot the Earth
 rE = 6378.1; % km
@@ -35,10 +36,16 @@ axis equal;
 view(3);
 grid on;
 hold on;
-% now plot orbit
-plot3(y_out(:,1), y_out(:,2), y_out(:,3), 'ro');
+% now plot orbits
+plot3(y_out(:,1), y_out(:,2), y_out(:,3), 'r.');
+plot3(y_out_J2(:,1), y_out_J2(:,2), y_out_J2(:,3), 'g.');
+title("Orbit using ECI position and velocity as state");
+legend("Earth", "Excluding J2", "Including J2");
+xlabel('I (km)');
+ylabel('J (km)');
+zlabel('K (km)');
 
-
+%% d) Keplerian propogation
 
 
 
@@ -50,6 +57,20 @@ function statedot = func(t, state)
     r = state(1:3);
     rdot = state(4:6);
     vdot = CentralBodyAccel(mu, r);
+    statedot = [rdot;
+                vdot];
+end
+
+function statedot = func_J2(t, state)
+    % State vector is [rx ry rz vx vy vz]’.
+    % Although required by form, input value t will go unused here.
+    mu = 3.986e5; % (km^3 / s^2) for earth
+    J2 = -0.108263e-2; % for earth
+    r = state(1:3);
+    rdot = state(4:6);
+    %[a, e, i, RAAN, omega, nu] = ECI2OE(r, rdot);
+    a = 7000;
+    vdot = CentralBodyAccel(mu, r) + J2AccelECI(mu, J2, a, r(1), r(2), r(3));
     statedot = [rdot;
                 vdot];
 end

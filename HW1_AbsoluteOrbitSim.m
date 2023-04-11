@@ -107,13 +107,13 @@ ylabel("velocity error [km/s]");
 xlabel("time [s]");
 
 %% e) Compute and plot Keplerian element. 
-PlotOrbitalElements(y_out, mu, "Orbital elements")
-PlotOrbitalElements(y_out_J2, mu, "Orbital elements with J2 effect")
+PlotOrbitalElements(y_out, mu, "Without J2 effect", t_out);
+PlotOrbitalElements(y_out_J2, mu, "With J2 effect", t_out_J2);
 
 
 
 %% functions
-function PlotOrbitalElements(y, mu, title_string)
+function PlotOrbitalElements(y, mu, title_string, t)
     r_eci = y(:, 1:3);
     v_eci = y(:,4:6);
     
@@ -128,13 +128,17 @@ function PlotOrbitalElements(y, mu, title_string)
     figure
     sgtitle(title_string)
     subplot(2, 1, 1)
-    plot(1:length(y), oe(:,1))
-    title("a vs time steps.")
+    plot(t, oe(:,1))
+    title("a vs time.")
+    ylabel("a [km]")
+    xlabel("time [s]")
 
     subplot(2, 1, 2);
-    plot(1:length(y), oe(:,2:6))
-    title("Angular Orbital elemens vs. time step")
+    plot(t, oe(:,2:6))
+    title("Angular orbital elements vs. time.")
     legend("e", "i", "RAAN", "Omega", "Nu")
+    ylabel("[radians]")
+    xlabel("time [s]")
     
     % Calculate angular momentum vector.
     h = zeros(size(r_eci));
@@ -144,10 +148,13 @@ function PlotOrbitalElements(y, mu, title_string)
     end
     
     figure
+    sgtitle(title_string)
     subplot(3, 1, 1);
-    plot(1:length(y), h)
-    title("Angular momentum components vs. time steps")
+    plot(t, h)
+    title("Angular momentum components vs. time.")
     legend("X", "Y", "Z")
+    ylabel("[km*kg/s]")
+    
     
     % Calculate eccentricity vector: https://en.wikipedia.org/wiki/Eccentricity_vector. 
     e = zeros(size(r_eci));
@@ -156,8 +163,9 @@ function PlotOrbitalElements(y, mu, title_string)
     end
 
     subplot(3, 1, 2);
-    plot(1:length(y), e)
-    title("Eccentricity vector components vs. time steps")  
+    plot(t, e)
+    title("Eccentricity vector components vs. time.")  
+    ylabel("[km]")
     
     % Calculate specific mechanical energy.
     mechanical_energy = zeros(length(y));
@@ -167,8 +175,10 @@ function PlotOrbitalElements(y, mu, title_string)
     end
     
     subplot(3, 1, 3);
-    plot(1:length(y), mechanical_energy)
-    title("Mechanical energy vs. time steps")
+    plot(t, mechanical_energy)
+    title("Mechanical energy vs. time.")
+    ylabel("[km^2*kg/s^2]")
+    xlabel("time [s]")
     
 end
 

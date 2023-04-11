@@ -20,6 +20,7 @@ nu = 0;
 %% c) simulate orbit with state in ECI
 n_orbits = 100;
 n_iter = 30 * n_orbits;
+n_steps = n_iter * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a^3 / mu);
 t_f = n_orbits * T;
@@ -105,18 +106,71 @@ title("Velocity Error in ECI Between Keplerian Propagation and ECI Propogation")
 ylabel("velocity error [km/s]");
 xlabel("time [s]");
 
-%% e) 
+%% e) Compute and plot Keplerian element. 
+PlotOrbitalElements(y_out, mu)
+PlotOrbitalElements(y_out_J2, mu)
+
+
 
 %% functions
+function PlotOrbitalElements(y, mu)
+    r_eci_no_j2 = y(:, 1:3);
+    v_eci_no_j2 = y(:,4:6);
+    
+    % osculating orbital elements. 
+    oe_no_j2 = zeros(length(y), 6);
+    
+    for i= 1:length(r_eci_no_j2)
+       oe_no_j2(i,:) = ECI2OE(r_eci_no_j2(i,:), v_eci_no_j2(i,:));
+    end
+    
+    figure
+    plot(1:length(y), oe_no_j2)
+    title("Orbital elemens vs. time step")
+    legend("a", "e", "i", "RAAN", "Omega", "Nu")
+    
+    % Calculate angular momentum vector.
+    h_no_j2 = zeros(size(r_eci_no_j2));
+    
+    for i= 1:length(r_eci_no_j2)
+       h_no_j2(i,:) = cross(r_eci_no_j2(i,:), v_eci_no_j2(i,:));
+    end
+    
+    figure
+    subplot(3, 1, 1);
+    plot(1:length(y), h_no_j2)
+    title("angular momentum components vs. time steps")
+    legend("X", "Y", "Z")
+    
+    % Calculate eccentricity vector: https://en.wikipedia.org/wiki/Eccentricity_vector. 
+    e_no_j2 = EccentricityVector(mu, r_eci_no_j2, v_eci_no_j2);
+    
+    figure
+    plot(1:length(y), e_no_j2)
+    title("Eccentricity vector components vs. time steps")  
+    
+    % Calculate specific mechanical energy.
+    mechanical_energy_no_j2 = zeros(length(y));
+    
+    for i = 1:length(y)
+        mechanical_energy_no_j2(i) = 0.5 *dot(v_eci_no_j2(i,:), v_eci_no_j2(i,:)) + mu/norm(r_eci_no_j2(i,:));
+    end
+    
+    figure
+    title("mechanical energy over time w/out J2.")
+    plot(1:length(y), mechanical_energy_no_j2)
+    
+end
+
 function statedot = func(t, state)
     % State vector is [rx ry rz vx vy vz]’.
     % Although required by form, input value t will go unused here.
-    mu = 3.986e5; % (km^3 / s^2)
-    r = state(1:3);
-    rdot = state(4:6);
-    vdot = CentralBodyAccel(mu, r);
-    statedot = [rdot;
-                vdot];
+        mu = 3.986e5; % (km^3 / s^2)
+        r = state(1:3);
+        rdot = state(4:6);
+        vdot = CentralBodyAccel(mu, r);
+        statedot = [rdot;
+                    vdot];
 end
 
 function statedot = func_J2(t, state)

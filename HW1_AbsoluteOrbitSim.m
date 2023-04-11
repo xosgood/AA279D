@@ -127,10 +127,14 @@ function PlotOrbitalElements(y, mu, title_string)
     
     figure
     sgtitle(title_string)
-    subplot(4, 1, 1);
-    plot(1:length(y), oe)
-    title("Orbital elemens vs. time step")
-    legend("a", "e", "i", "RAAN", "Omega", "Nu")
+    subplot(2, 1, 1)
+    plot(1:length(y), oe(:,1))
+    title("a vs time steps.")
+
+    subplot(2, 1, 2);
+    plot(1:length(y), oe(:,2:6))
+    title("Angular Orbital elemens vs. time step")
+    legend("e", "i", "RAAN", "Omega", "Nu")
     
     % Calculate angular momentum vector.
     h = zeros(size(r_eci));
@@ -139,15 +143,19 @@ function PlotOrbitalElements(y, mu, title_string)
        h(i,:) = cross(r_eci(i,:), v_eci(i,:));
     end
     
-    subplot(4, 1, 2);
+    figure
+    subplot(3, 1, 1);
     plot(1:length(y), h)
     title("Angular momentum components vs. time steps")
     legend("X", "Y", "Z")
     
     % Calculate eccentricity vector: https://en.wikipedia.org/wiki/Eccentricity_vector. 
-    e = EccentricityVector(mu, r_eci, v_eci);
-    
-    subplot(4, 1, 3);
+    e = zeros(size(r_eci));
+    for i= 1:length(r_eci)
+        e(i,:) = EccentricityVector(mu, r_eci(i,:), v_eci(i,:));
+    end
+
+    subplot(3, 1, 2);
     plot(1:length(y), e)
     title("Eccentricity vector components vs. time steps")  
     
@@ -158,7 +166,7 @@ function PlotOrbitalElements(y, mu, title_string)
         mechanical_energy(i) = 0.5 *dot(v_eci(i,:), v_eci(i,:)) + mu/norm(r_eci(i,:));
     end
     
-    subplot(4, 1, 4);
+    subplot(3, 1, 3);
     plot(1:length(y), mechanical_energy)
     title("Mechanical energy vs. time steps")
     

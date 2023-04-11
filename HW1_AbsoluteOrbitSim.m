@@ -2,7 +2,8 @@
 % 4/7/23
 % AA279D HW1
 clc; clear; close all;
-addpath("Functions/Absolute_Orbits")
+addpath("Functions/")
+addpath("Functions/Absolute_Orbits/")
 
 %% a) initial orbital elements
 a = 7000; % km
@@ -17,8 +18,8 @@ nu = 0;
 [r_ECI_0, v_ECI_0] = OE2ECI(a, e, i, RAAN, omega, nu);
 
 %% c) simulate orbit with state in ECI
-n_iter = 200;
-n_orbits = 10;
+n_orbits = 100;
+n_iter = 30 * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a^3 / mu);
 t_f = n_orbits * T;
@@ -32,7 +33,7 @@ options = odeset('RelTol', 1e-6, 'AbsTol', 1e-9);
 % First, Plot the Earth
 rE = 6378.1; % km
 [xE, yE, zE] = ellipsoid(0, 0, 0, rE, rE, rE, 20);
-figure
+figure;
 surface(xE, yE, zE, 'FaceColor', 'blue', 'EdgeColor', 'black'); 
 axis equal;
 view(3);
@@ -60,6 +61,8 @@ geod_station = [0; 0; 0]; % fake value since we don't care about this
 kep_data = SimulateOrbitFromOE(a, e, i, RAAN, omega, M_0, geod_station, t_0_MJD, t_f_MJD, n_iter);
 r_ECI_kep = kep_data.r_ECI_vec;
 v_ECI_kep = kep_data.v_ECI_vec;
+r_RTN_kep = kep_data.r_RTN_vec;
+v_RTN_kep = kep_data.v_RTN_vec;
 
 % plotting
 % plot the Earth
@@ -76,22 +79,33 @@ xlabel('I (km)');
 ylabel('J (km)');
 zlabel('K (km)');
 
+% change y_out from ECI to RTN
+y_out_RTN = zeros(size(y_out));
+for i = 1:length(y_out)
+    r_ECI_cur = y_out(i,1:3)';
+    v_ECI_cur = y_out(i,4:6)';
+    R_ECI2RTN_cur = rECI2RTN(y_out(i,:)');
+    y_out_RTN(i,1:3) = R_ECI2RTN_cur * r_ECI_cur;
+    y_out_RTN(i,4:6) = R_ECI2RTN_cur * v_ECI_cur;
+end
+
 % error between keplerian sim and ECI sim
-r_err_kep_ECI = abs(r_ECI_kep - y_out(:,1:3)');
-v_err_kep_ECI = abs(v_ECI_kep - y_out(:,4:6)');
+r_err_RTN_kep = abs(r_RTN_kep - y_out_RTN(:,1:3)');
+v_err_RTN_kep = abs(v_RTN_kep - y_out_RTN(:,4:6)');
 % plot errors
 figure;
 subplot(2, 1, 1);
-plot(t_out', r_err_kep_ECI, t_out', vecnorm(r_err_kep_ECI));
+plot(t_out', r_err_RTN_kep, t_out', vecnorm(r_err_RTN_kep));
 title("Position Error in ECI Between Keplerian Propagation and ECI Propogation")
-ylabel("km");
-legend("I", "J", "K", "magnitude", "Location", "best");
+ylabel("position error [km]");
+legend("R", "T", "N", "magnitude", "Location", "best");
 subplot(2, 1, 2);
-plot(t_out', v_err_kep_ECI, t_out', vecnorm(v_err_kep_ECI));
+plot(t_out', v_err_RTN_kep, t_out', vecnorm(v_err_RTN_kep));
 title("Velocity Error in ECI Between Keplerian Propagation and ECI Propogation")
-ylabel("km/s");
-xlabel("time (s)");
+ylabel("velocity error [km/s]");
+xlabel("time [s]");
 
+%% e) 
 
 %% functions
 function statedot = func(t, state)

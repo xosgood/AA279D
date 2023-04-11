@@ -122,7 +122,7 @@ function PlotOrbitalElements(y, mu, title_string)
     
     for i= 1:length(r_eci)
        [a, e, inc, RAAN, omega, nu] = ECI2OE(r_eci(i,:), v_eci(i,:));
-       oe(i,:) = [a, e, i, RAAN, omega, nu];
+       oe(i,:) = [a, e, inc, RAAN, omega, nu];
     end
     
     figure

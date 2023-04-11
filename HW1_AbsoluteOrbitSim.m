@@ -107,58 +107,60 @@ ylabel("velocity error [km/s]");
 xlabel("time [s]");
 
 %% e) Compute and plot Keplerian element. 
-PlotOrbitalElements(y_out, mu)
-PlotOrbitalElements(y_out_J2, mu)
+PlotOrbitalElements(y_out, mu, "Orbital elements")
+PlotOrbitalElements(y_out_J2, mu, "Orbital elements with J2 effect")
 
 
 
 %% functions
-function PlotOrbitalElements(y, mu)
-    r_eci_no_j2 = y(:, 1:3);
-    v_eci_no_j2 = y(:,4:6);
+function PlotOrbitalElements(y, mu, title_string)
+    r_eci = y(:, 1:3);
+    v_eci = y(:,4:6);
     
     % osculating orbital elements. 
-    oe_no_j2 = zeros(length(y), 6);
+    oe = zeros(length(y), 6);
     
-    for i= 1:length(r_eci_no_j2)
-       oe_no_j2(i,:) = ECI2OE(r_eci_no_j2(i,:), v_eci_no_j2(i,:));
+    for i= 1:length(r_eci)
+       [a, e, inc, RAAN, omega, nu] = ECI2OE(r_eci(i,:), v_eci(i,:));
+       oe(i,:) = [a, e, i, RAAN, omega, nu];
     end
     
     figure
-    plot(1:length(y), oe_no_j2)
+    sgtitle(title_string)
+    subplot(4, 1, 1);
+    plot(1:length(y), oe)
     title("Orbital elemens vs. time step")
     legend("a", "e", "i", "RAAN", "Omega", "Nu")
     
     % Calculate angular momentum vector.
-    h_no_j2 = zeros(size(r_eci_no_j2));
+    h = zeros(size(r_eci));
     
-    for i= 1:length(r_eci_no_j2)
-       h_no_j2(i,:) = cross(r_eci_no_j2(i,:), v_eci_no_j2(i,:));
+    for i= 1:length(r_eci)
+       h(i,:) = cross(r_eci(i,:), v_eci(i,:));
     end
     
-    figure
-    subplot(3, 1, 1);
-    plot(1:length(y), h_no_j2)
-    title("angular momentum components vs. time steps")
+    subplot(4, 1, 2);
+    plot(1:length(y), h)
+    title("Angular momentum components vs. time steps")
     legend("X", "Y", "Z")
     
     % Calculate eccentricity vector: https://en.wikipedia.org/wiki/Eccentricity_vector. 
-    e_no_j2 = EccentricityVector(mu, r_eci_no_j2, v_eci_no_j2);
+    e = EccentricityVector(mu, r_eci, v_eci);
     
-    figure
-    plot(1:length(y), e_no_j2)
+    subplot(4, 1, 3);
+    plot(1:length(y), e)
     title("Eccentricity vector components vs. time steps")  
     
     % Calculate specific mechanical energy.
-    mechanical_energy_no_j2 = zeros(length(y));
+    mechanical_energy = zeros(length(y));
     
     for i = 1:length(y)
-        mechanical_energy_no_j2(i) = 0.5 *dot(v_eci_no_j2(i,:), v_eci_no_j2(i,:)) + mu/norm(r_eci_no_j2(i,:));
+        mechanical_energy(i) = 0.5 *dot(v_eci(i,:), v_eci(i,:)) + mu/norm(r_eci(i,:));
     end
     
-    figure
-    title("mechanical energy over time w/out J2.")
-    plot(1:length(y), mechanical_energy_no_j2)
+    subplot(4, 1, 4);
+    plot(1:length(y), mechanical_energy)
+    title("Mechanical energy vs. time steps")
     
 end
 

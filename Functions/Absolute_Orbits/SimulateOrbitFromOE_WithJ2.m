@@ -58,5 +58,6 @@ function data_sim = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_s
     data_sim.az_el_rho_vec = az_el_rho_vec;
     data_sim.r_RTN_vec = r_RTN_vec;
     data_sim.v_RTN_vec = v_RTN_vec;
+    data_sim.t_vec = t_vec_sec;
 end
 

@@ -82,12 +82,12 @@ zlabel('K (km)');
 
 % change y_out from ECI to RTN
 y_out_RTN = zeros(size(y_out));
-for i = 1:length(y_out)
-    r_ECI_cur = y_out(i,1:3)';
-    v_ECI_cur = y_out(i,4:6)';
-    R_ECI2RTN_cur = rECI2RTN(y_out(i,:)');
-    y_out_RTN(i,1:3) = R_ECI2RTN_cur * r_ECI_cur;
-    y_out_RTN(i,4:6) = R_ECI2RTN_cur * v_ECI_cur;
+for iter = 1:length(y_out)
+    r_ECI_cur = y_out(iter,1:3)';
+    v_ECI_cur = y_out(iter,4:6)';
+    R_ECI2RTN_cur = rECI2RTN(y_out(iter,:)');
+    y_out_RTN(iter,1:3) = R_ECI2RTN_cur * r_ECI_cur;
+    y_out_RTN(iter,4:6) = R_ECI2RTN_cur * v_ECI_cur;
 end
 
 % error between keplerian sim and ECI sim
@@ -110,17 +110,92 @@ xlabel("time [s]");
 PlotOrbitalElements(y_out, mu, "Without J2 effect", t_out);
 PlotOrbitalElements(y_out_J2, mu, "With J2 effect", t_out_J2);
 
+%% f) Apply linear mean J2 effects to analytical Keplerian propagation and compare with ECI sim with J2 effects
+kep_data = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_station, t_0_MJD, t_f_MJD, n_iter);
+r_ECI_kep_J2 = kep_data.r_ECI_vec;
+v_ECI_kep_J2 = kep_data.v_ECI_vec;
+
+% plotting
+% plot the Earth
+rE = 6378.1; % km
+[xE, yE, zE] = ellipsoid(0, 0, 0, rE, rE, rE, 20);
+figure;
+surface(xE, yE, zE, 'FaceColor', 'blue', 'EdgeColor', 'black'); 
+axis equal; view(3); grid on; hold on;
+% plot orbits
+plot3(r_ECI_kep_J2(1,:), r_ECI_kep_J2(2,:), r_ECI_kep_J2(3,:), 'r-');
+title("Orbit using Keplerian Propagation, Including J2");
+xlabel('I (km)');
+ylabel('J (km)');
+zlabel('K (km)');
+
+% get oe at every timestep for keplerian sim with J2 effect and ECI sim with J2
+oe_kep_vec = zeros(6, length(r_ECI_kep_J2));
+oe_kepJ2_vec = zeros(6, length(r_ECI_kep_J2));
+for iter = 1:length(r_ECI_kep_J2)
+    [a_J2, e_J2, inc_J2, RAAN_J2, omega_J2, nu_J2] = ECI2OE(y_out_J2(iter,1:3), y_out_J2(iter,4:6));
+    [a_kep_J2, e_kep_J2, inc_kep_J2, RAAN_kep_J2, omega_kep_J2, nu_kep_J2] = ECI2OE(r_ECI_kep_J2(:,iter), v_ECI_kep_J2(:,iter));
+    oe_kep_vec(:,iter) = [a_J2, e_J2, inc_J2, wrapToPi(RAAN_J2), omega_J2, nu_J2]';
+    oe_kepJ2_vec(:,iter) = [a_kep_J2, e_kep_J2, inc_kep_J2, wrapToPi(RAAN_kep_J2), omega_kep_J2, nu_kep_J2]';
+end
+figure;
+sgtitle("Comparing Kep sim and ECI sim, both with J2");
+subplot(3,1,1);
+plot(t_out, oe_kep_vec(1,:));
+hold on;
+plot(t_out, oe_kepJ2_vec(1,:));
+title("a vs. time");
+legend("Excluding J2", "Including J2");
+ylabel("a [km]");
+subplot(3,1,2);
+plot(t_out, oe_kep_vec(2:5,:));
+hold on;
+plot(t_out, oe_kepJ2_vec(2:5,:));
+title("e, i, RAAN, omega vs. time");
+legend("e, Excluding J2", "i, Excluding J2", "RAAN, Excluding J2", "omega, Excluding J2", ...
+       "e, Including J2", "i, Including J2", "RAAN, Including J2", "omega, Including J2");
+ylabel(["e is unitless;","all angles in radians"]);
+subplot(3,1,3);
+plot(t_out, oe_kep_vec(6,:));
+hold on;
+plot(t_out, oe_kepJ2_vec(6,:));
+title("nu vs. time");
+ylabel("nu [rad]");
+xlabel("time [s]");
+
+% plot errors between oe with J2 from kep and from ECI sims
+figure;
+sgtitle("Errors: Comparing Kep sim and ECI sim, both with J2");
+subplot(4,1,1);
+plot(t_out, abs(oe_kep_vec(1,:)-oe_kepJ2_vec(1,:)));
+title("a error vs. time");
+ylabel("a [km]");
+subplot(4,1,2);
+plot(t_out, abs(oe_kep_vec(2:4,:)-oe_kepJ2_vec(2:4,:)));
+title("e, i, RAAN errors vs. time");
+legend("e error", "i error", "RAAN error");
+ylabel(["e is unitless;","all angles in radians"]);
+subplot(4,1,3);
+plot(t_out, abs(oe_kep_vec(5,:)-oe_kepJ2_vec(5,:)));
+title("omega error vs. time");
+ylabel("omega [rad]");
+xlabel("time [s]");
+subplot(4,1,4);
+plot(t_out, abs(oe_kep_vec(6,:)-oe_kepJ2_vec(6,:)));
+title("nu error vs. time");
+ylabel("nu [rad]");
+xlabel("time [s]");
 
 
 %% functions
 function PlotOrbitalElements(y, mu, title_string, t)
-    r_eci = y(:, 1:3);
+    r_eci = y(:,1:3);
     v_eci = y(:,4:6);
     
     % osculating orbital elements. 
     oe = zeros(length(y), 6);
     
-    for i= 1:length(r_eci)
+    for i = 1:length(r_eci)
        [a, e, inc, RAAN, omega, nu] = ECI2OE(r_eci(i,:), v_eci(i,:));
        oe(i,:) = [a, e, inc, RAAN, omega, nu];
     end
@@ -143,7 +218,7 @@ function PlotOrbitalElements(y, mu, title_string, t)
     % Calculate angular momentum vector.
     h = zeros(size(r_eci));
     
-    for i= 1:length(r_eci)
+    for i = 1:length(r_eci)
        h(i,:) = cross(r_eci(i,:), v_eci(i,:));
     end
     
@@ -164,11 +239,12 @@ function PlotOrbitalElements(y, mu, title_string, t)
 
     subplot(3, 1, 2);
     plot(t, e)
-    title("Eccentricity vector components vs. time.")  
+    title("Eccentricity vector components vs. time.")
+    legend("X", "Y", "Z")
     ylabel("[km]")
     
     % Calculate specific mechanical energy.
-    mechanical_energy = zeros(length(y));
+    mechanical_energy = zeros(1, length(y));
     
     for i = 1:length(y)
         mechanical_energy(i) = 0.5 *dot(v_eci(i,:), v_eci(i,:)) + mu/norm(r_eci(i,:));

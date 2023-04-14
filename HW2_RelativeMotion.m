@@ -22,7 +22,7 @@ omega_1 = deg2rad(90.25);
 nu_1 = deg2rad(0.5);
 
 %% sim parameters
-n_orbits = 10;
+n_orbits = 5;
 n_iter = 30 * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a_0^3 / mu);
@@ -30,7 +30,6 @@ t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter); % [0, t_f];
 
 %% b) relative orbit sim
-
 [r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);
 [r_ECI_1, v_ECI_1] = OE2ECI(a_1, e_1, i_1, RAAN_1, omega_1, nu_1);
 
@@ -64,6 +63,9 @@ v_ECI_0 = abs_data_0.v_ECI_vec;
 r_ECI_1 = abs_data_1.r_ECI_vec;
 v_ECI_1 = abs_data_1.v_ECI_vec;
 
+% turn ECI to RTN for deputy state
+[r_RTN_1, v_RTN_1] = ECI2RTN_Vectorized(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+
 % plot orbits in ECI
 figure;
 PlotEarth();
@@ -74,6 +76,10 @@ legend("Chief", "Deputy");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
 % plot orbits in RTN
+figure;
+sgtitle("Relative Orbit (RTN) from Absolute Orbit Simulation")
+PlotRTN(t, r_RTN_1, v_RTN_1);
+% TODO
 
 
 

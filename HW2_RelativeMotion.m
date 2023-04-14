@@ -30,6 +30,17 @@ t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter); % [0, t_f];
 
 %% b) relative orbit sim
+r_rtn = [];
+v_rtn = [];
+r = 0;
+theta = 0;
+theta_dot = [];
+v = 0;
+
+state0 = [r_rtn; theta; r; v_rtn; theta_dot, v];
+
+options = odeset('RelTol', 1e-6, 'AbsTol', 1e-9);
+%[x_rtn, y_rtn, z_rtn, theta, r, vx_rtn, vy_rtn, vz_rtn, omega, dr] = ode113(@RelativeMotionRTN, tspan, state0, options);
 
 
 %% c) absolute orbit sim of chief and deputy

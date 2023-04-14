@@ -9,17 +9,17 @@ function statedot = RelativeMotionDifEqRTN(t, state)
     theta0 = state(4);
     r0 = state(5);
 
-    vx = state(6);
-    vy = state(7);
-    vz = state(8);
+    vx = state(4);
+    vy = state(5);
+    vz = state(6);
     omega0 = state(9);
     dr0 = state(10);
       
     
     dr0_dot = r0 * omega0^2;
-    omega0_dot = - 2*dr0*
-    vx_dot = 2*omega0*vy - omega0_dot*x + omega_0^2 *y - mu*(r0+x) / ((r0 + x)^2 + y^2 + z^2)^(3/2) + mu/r0^2; 
-    vy_dot = -2*omega0*vx - omega0_dot*x + omega0^2*y - mu*y/((r0 + x)^2 + y^2 + z^2)^(3/2);
+    omega0_dot = - 2*dr0*omega0/r0;
+    vx_dot = 2*omega0*y - omega0_dot*x + omega0^2 *y - mu*(r0+x) / ((r0 + x)^2 + y^2 + z^2)^(3/2) + mu/r0^2; 
+    vy_dot = -2*omega0*x - omega0_dot*x + omega0^2*y - mu*y/((r0 + x)^2 + y^2 + z^2)^(3/2);
     vz_dot = - mu*z / ((r0 + x)^2 + y^2 + z^2)^(3/2);
 
     statedot = [vx; vy; vz; omega0; dr0; vx_dot; vy_dot; vz_dot; omega0_dot; dr0_dot];

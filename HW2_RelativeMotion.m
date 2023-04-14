@@ -30,18 +30,21 @@ t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter); % [0, t_f];
 
 %% b) relative orbit sim
-r_rtn = [];
-v_rtn = [];
-r = 0;
-theta = 0;
-theta_dot = [];
-v = 0;
 
-state0 = [r_rtn; theta; r; v_rtn; theta_dot, v];
+[r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);
+[r_ECI_1, v_ECI_1] = OE2ECI(a_1, e_1, i_1, RAAN_1, omega_1, nu_1);
+
+[r_RTN, v_RTN] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+
+r0 = norm(r_ECI_0);
+v0 = norm(v_ECI_0);
+
+theta = nu_0 - omega_0;
+theta_dot = v0/r0;
+state0 = [r_RTN; theta; r0; v_RTN; theta_dot; v0];
 
 options = odeset('RelTol', 1e-6, 'AbsTol', 1e-9);
-%[x_rtn, y_rtn, z_rtn, theta, r, vx_rtn, vy_rtn, vz_rtn, omega, dr] = ode113(@RelativeMotionRTN, tspan, state0, options);
-
+[t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
 
 %% c) absolute orbit sim of chief and deputy
 % set times

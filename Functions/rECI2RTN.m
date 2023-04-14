@@ -1,5 +1,5 @@
 function R_ECI2RTN = rECI2RTN(vec_ECI)
-    %ECI2RTN convert a vector in ECI to RTN frame
+    %rECI2RTN returns a rotation matrix from ECI to RTN frame
     % vec_ECI should be [r; v]_ECI
     assert(all(size(vec_ECI) == [6, 1]), "Vector provided to rECI2RTN() must be size 6x1")
     

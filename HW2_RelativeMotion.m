@@ -46,7 +46,6 @@ state0 = [r_RTN; theta; r0; v_RTN; theta_dot; v0];
 options = odeset('RelTol', 1e-6, 'AbsTol', 1e-9);
 [t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
 
-
 %% c) absolute orbit sim of chief and deputy
 % set times
 t_0_MJD = mjuliandate(2023,07,04,12,0,0); % 07/04/2023 converted to MJD

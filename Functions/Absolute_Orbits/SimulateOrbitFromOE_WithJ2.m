@@ -27,8 +27,6 @@ function data_sim = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_s
     geod_vec = zeros(3,n_iter);
     r_ENU_vec = zeros(3,n_iter);
     az_el_rho_vec = zeros(3,n_iter);
-    r_RTN_vec = zeros(3,n_iter);
-    v_RTN_vec = zeros(3,n_iter);
     for iter = 1:n_iter
         [r_ECI_vec(:,iter), v_ECI_vec(:,iter)] = OE2ECI(a, e, i, RAAN, omega, nu_vec(iter));
         if iter > 1 % skip the very first iteration
@@ -45,9 +43,6 @@ function data_sim = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_s
         [geod_vec(1,iter), geod_vec(2,iter), geod_vec(3,iter)] = ECEF2Geod(r_ECEF_vec(:,iter), eps);
         r_ENU_vec(:,iter) = ECEF2ENU(r_ECEF_vec(:,iter), geod_station);
         [az_el_rho_vec(1,iter), az_el_rho_vec(2,iter), az_el_rho_vec(3,iter)] = ENU2AzEl(r_ENU_vec(:,iter));
-        R_ECI2RTN = rECI2RTN([r_ECI_vec(:,iter); v_ECI_vec(:,iter)]);
-        r_RTN_vec(:,iter) = R_ECI2RTN * r_ECI_vec(:,iter);
-        v_RTN_vec(:,iter) = R_ECI2RTN * v_ECI_vec(:,iter);
     end
     data_sim.r_ECI_vec = r_ECI_vec;
     data_sim.v_ECI_vec = v_ECI_vec;
@@ -56,8 +51,6 @@ function data_sim = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_s
     data_sim.geod_vec = geod_vec;
     data_sim.r_ENU_vec = r_ENU_vec;
     data_sim.az_el_rho_vec = az_el_rho_vec;
-    data_sim.r_RTN_vec = r_RTN_vec;
-    data_sim.v_RTN_vec = v_RTN_vec;
     data_sim.t_vec = t_vec_sec;
 end
 

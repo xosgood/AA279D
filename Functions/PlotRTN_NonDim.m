@@ -1,21 +1,19 @@
-function PlotRTN(t, r_RTN, v_RTN)
-    % PLOTRTN 
-    % Each vector should be size (3xN) where N is the number of timesteps
-    
-    %%% Plot state vs time
+function PlotRTN_NonDim(t, r_RTN, v_RTN, a)
+    %PLOTRTN_NONDIM
+    r_RTN = r_RTN / a;
     
     % plot positions in RTN
     subplot(3,3,1);
     plot(t, r_RTN(1,:));
-    ylabel("position in R [km]");
+    ylabel("x/a (R)");
     xlabel("time [s]");
     subplot(3,3,4);
     plot(t, r_RTN(2,:));
-    ylabel("position in T [km]");
+    ylabel("y/a (T)");
     xlabel("time [s]");
     subplot(3,3,7);
     plot(t, r_RTN(3,:));
-    ylabel("position in N [km]");
+    ylabel("z/a (N)");
     xlabel("time [s]");
     % plot velocities in RTN
     subplot(3,3,2);
@@ -35,17 +33,17 @@ function PlotRTN(t, r_RTN, v_RTN)
     % plot RT
     subplot(3,3,3);
     plot(r_RTN(1,:), r_RTN(2,:));
-    xlabel("R [km]");
-    ylabel("T [km]");
+    xlabel("x/a (R)");
+    ylabel("y/a (T)");
     % plot RN
     subplot(3,3,6);
     plot(r_RTN(1,:), r_RTN(3,:));
-    xlabel("R [km]");
-    ylabel("N [km]");
+    xlabel("x/a (R)");
+    ylabel("z/a (N)");
     % plot TN
     subplot(3,3,9);
     plot(r_RTN(2,:), r_RTN(3,:));
-    xlabel("T [km]");
-    ylabel("N [km]");
+    xlabel("y/a (T)");
+    ylabel("z/a (N)");
 end
 

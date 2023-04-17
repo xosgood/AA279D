@@ -5,7 +5,7 @@ function [r_RTN, v_RTN] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1)
     % Reference: https://sisl.github.io/SatelliteDynamics.jl/latest/modules/reference_systems/#SatelliteDynamics.sECItoRTN
     
     % rotation matrix from ECI to RTN
-    R_ECI2RTN = rECI2RTN([r_ECI_1; v_ECI_1]);
+    R_ECI2RTN = rECI2RTN([r_ECI_0; v_ECI_0]);
     
     % turn position into RTN
     rho = r_ECI_1 - r_ECI_0;

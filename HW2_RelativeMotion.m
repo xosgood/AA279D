@@ -1,6 +1,6 @@
 % Paxton Scott and Chris Osgood
 % 4/14/23
-% AA279D HW1
+% AA279D HW2
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
@@ -246,8 +246,10 @@ end
 
 figure;
 hold on;
-%subplot(2,1,1);
 plot(t_tot_maneuver, oe_1_with_manuever(:,1));
-%subplot(2,1,2);
 plot(t_tot_maneuver, oe_0(:,1));
+sgtitle("Semi-major axis over time");
+xlabel("time [s]");
+ylabel("semi-major axis [km]");
+legend({'deputy', 'chief'})
 hold off;

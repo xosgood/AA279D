@@ -36,14 +36,14 @@ tspan = linspace(0, t_f, n_iter); % [0, t_f];
 [r_RTN, v_RTN] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
 
 r0 = norm(r_ECI_0);
-v0 = norm(v_ECI_0);
+r0_dot = v_RTN(1);
 
 theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
-state0 = [r_RTN; theta; r0; v_RTN; theta_dot; v0];
+state0 = [r_RTN; theta; r0; v_RTN; theta_dot; r0_dot];
 
 options = odeset('RelTol', 1e-6, 'AbsTol', 1e-9);
-[t, state_out] = ode45(@RelativeMotionDifEqRTN, tspan, state0, options);
+[t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
 
 % pull out RTN position and velocity
 r_RTN_relsim = state_out(:,1:3)';

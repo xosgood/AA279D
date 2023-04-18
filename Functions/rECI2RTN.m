@@ -8,7 +8,7 @@ function R_ECI2RTN = rECI2RTN(vec_ECI)
     n = cross(r, v);
 
     R = r / norm(r);
-    N = r / norm(n);
+    N = n / norm(n);
     T = cross(N, R);
 
     R_ECI2RTN = [R, T, N]';

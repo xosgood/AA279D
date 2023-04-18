@@ -230,3 +230,24 @@ v_RTN_tot_maneuver = [v_RTN_pre_dv, v_RTN_post_dv];
 figure;
 PlotRTN(t_tot_maneuver, r_RTN_tot_maneuver, v_RTN_tot_maneuver);
 sgtitle("Relative Motion with Along-Track Maneuver to Cancel da");
+
+% Plot semi-major axis over time 
+x_ECI_0 = [r_ECI_0(:,1:299); v_ECI_0(:,1:299)];
+x_RTN_1 = [r_RTN_tot_maneuver; v_RTN_tot_maneuver];
+x_ECI_1_maneuver = RTN2ECI_Vectorized(x_ECI_0, x_RTN_1);
+
+oe_1_with_manuever = zeros(size(x_ECI_0));
+oe_0 = zeros(size(x_ECI_0));
+
+for iter = 1:size(x_ECI_0,2)
+    oe_1_with_manuever(iter,:) = ECI2OE(x_ECI_1_maneuver(1:3,iter), x_ECI_1_maneuver(4:6,iter));
+    oe_0(iter,:) = ECI2OE(r_ECI_0(:,iter), v_ECI_0(:,iter));
+end
+
+figure;
+hold on;
+%subplot(2,1,1);
+plot(t_tot_maneuver, oe_1_with_manuever(:,1));
+%subplot(2,1,2);
+plot(t_tot_maneuver, oe_0(:,1));
+hold off;

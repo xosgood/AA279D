@@ -37,15 +37,18 @@ function PlotRTN(t, r_RTN, v_RTN)
     plot(r_RTN(1,:), r_RTN(2,:));
     xlabel("R [km]");
     ylabel("T [km]");
+    axis equal
     % plot RN
     subplot(3,3,6);
     plot(r_RTN(1,:), r_RTN(3,:));
     xlabel("R [km]");
     ylabel("N [km]");
+    axis equal
     % plot TN
     subplot(3,3,9);
     plot(r_RTN(2,:), r_RTN(3,:));
     xlabel("T [km]");
     ylabel("N [km]");
+    axis equal
 end
 

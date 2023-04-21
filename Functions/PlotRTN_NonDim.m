@@ -35,15 +35,18 @@ function PlotRTN_NonDim(t, r_RTN, v_RTN, a)
     plot(r_RTN(1,:), r_RTN(2,:));
     xlabel("x/a (R)");
     ylabel("y/a (T)");
+    axis equal
     % plot RN
     subplot(3,3,6);
     plot(r_RTN(1,:), r_RTN(3,:));
     xlabel("x/a (R)");
     ylabel("z/a (N)");
+    axis equal
     % plot TN
     subplot(3,3,9);
     plot(r_RTN(2,:), r_RTN(3,:));
     xlabel("y/a (T)");
     ylabel("z/a (N)");
+    axis equal
 end
 

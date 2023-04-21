@@ -34,14 +34,16 @@ tspan = linspace(0, t_f, n_iter); % [0, t_f];
 [r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);
 [r_ECI_1, v_ECI_1] = OE2ECI(a_1, e_1, i_1, RAAN_1, omega_1, nu_1);
 
-[r_RTN, v_RTN] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+[r_RTN_d, v_RTN_d] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+
+v_ECI_c_expressedInRTN = rECI2RTN([r_ECI_0; v_ECI_0]) * v_ECI_0;
 
 r0 = norm(r_ECI_0);
-r0_dot = v_RTN(1);
+r0_dot = v_ECI_c_expressedInRTN(1);
 
 theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
-state0 = [r_RTN; theta; r0; v_RTN; theta_dot; r0_dot];
+state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
 [t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
@@ -121,14 +123,16 @@ a_1 = a_0 + da;
 [r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);
 [r_ECI_1, v_ECI_1] = OE2ECI(a_1, e_1, i_1, RAAN_1, omega_1, nu_1);
 
-[r_RTN, v_RTN] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+[r_RTN_d, v_RTN_d] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
+
+v_ECI_c_expressedInRTN = rECI2RTN([r_ECI_0; v_ECI_0]) * v_ECI_0;
 
 r0 = norm(r_ECI_0);
-v0 = v_RTN(1);
+r0_dot = v_ECI_c_expressedInRTN(1);
 
 theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2;
-state0 = [r_RTN; theta; r0; v_RTN; theta_dot; v0];
+state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
 [t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);

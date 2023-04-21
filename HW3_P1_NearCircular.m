@@ -44,4 +44,10 @@ theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
 state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
+x_RTN_d = [r_RTN_d; v_RTN_d];
+
+K = RTN2HCW_IC(x_RTN_d, a_0, 0);
+
+
+
 %% c)

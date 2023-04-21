@@ -32,17 +32,17 @@ function PlotRTN(t, r_RTN, v_RTN)
     xlabel("time [s]");
     
     %%% Plot relative motion in projected planes
-    % plot RT
+    % plot TR
     subplot(3,3,3);
-    plot(r_RTN(1,:), r_RTN(2,:));
-    xlabel("R [km]");
-    ylabel("T [km]");
+    plot(r_RTN(2,:), r_RTN(1,:));
+    xlabel("T [km]");
+    ylabel("R [km]");
     axis equal
-    % plot RN
+    % plot NR
     subplot(3,3,6);
-    plot(r_RTN(1,:), r_RTN(3,:));
-    xlabel("R [km]");
-    ylabel("N [km]");
+    plot(r_RTN(3,:), r_RTN(1,:));
+    xlabel("N [km]");
+    ylabel("R [km]");
     axis equal
     % plot TN
     subplot(3,3,9);

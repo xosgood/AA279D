@@ -30,17 +30,17 @@ function PlotRTN_NonDim(t, r_RTN, v_RTN, a)
     xlabel("time [s]");
     
     %%% Plot relative motion in projected planes
-    % plot RT
+    % plot TR
     subplot(3,3,3);
-    plot(r_RTN(1,:), r_RTN(2,:));
-    xlabel("x/a (R)");
-    ylabel("y/a (T)");
+    plot(r_RTN(2,:), r_RTN(1,:));
+    xlabel("y/a (T)");
+    ylabel("x/a (R)");
     axis equal
-    % plot RN
+    % plot NR
     subplot(3,3,6);
-    plot(r_RTN(1,:), r_RTN(3,:));
-    xlabel("x/a (R)");
-    ylabel("z/a (N)");
+    plot(r_RTN(3,:), r_RTN(1,:));
+    xlabel("z/a (N)");
+    ylabel("x/a (R)");
     axis equal
     % plot TN
     subplot(3,3,9);

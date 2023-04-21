@@ -12,6 +12,7 @@ i_0 = deg2rad(98);
 RAAN_0 = 0;
 omega_0 = deg2rad(90);
 nu_0 = 0;
+oe_c = [a_0; e_0; i_0; RAAN_0; omega_0; nu_0];
 
 % deputy
 a_1 = a_0;
@@ -20,6 +21,7 @@ i_1 = deg2rad(98.01);
 RAAN_1 = deg2rad(0.05);
 omega_1 = deg2rad(90.05);
 nu_1 = deg2rad(0.01);
+oe_d = [a_1; e_1; i_1; RAAN_1; omega_1; nu_1];
 
 %% b) convert initial conditions to useful coord frames
 [r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);

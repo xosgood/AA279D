@@ -53,6 +53,10 @@ assert(rho / r0 <= 0.001);
 
 theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
+
+% Impose artificial constraint to ensure cyclic solution by linear solver.
+v_RTN_d(2) = - 2*sqrt(mu/a_0^3)*r_RTN_d(1);
+
 state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
 
@@ -73,47 +77,49 @@ end
 % Plot relative position in 3D. 
 figure;
 plot3(x_RTN_circular(:,1), x_RTN_circular(:,2), x_RTN_circular(:,3));
-xlabel("R");
-ylabel("T");
-zlabel("N");
+xlabel("R [km]");
+ylabel("T [km]");
+zlabel("N [km]");
 title("Relative position in RTN over time.")
 
 % Plot relative velocity in 3D. 
 figure;
 plot3(x_RTN_circular(:,4), x_RTN_circular(:,5), x_RTN_circular(:,6));
-xlabel("R");
-ylabel("T");
-zlabel("N");
+xlabel("R [km/s]");
+ylabel("T [km/s]");
+zlabel("N [km/s]");
 title("Relative velocity in RTN over time. ")
 
 % Plot relative position in TR, NR, TN plane.
 figure;
-title("Relative position in RTN over time");
 subplot(3,1,1);
 plot(x_RTN_circular(:,1), x_RTN_circular(:,2));
-xlabel("R");
-ylabel("T");
+title("Relative position in RTN over time");
+xlabel("R [km]");
+ylabel("T [km]");
 subplot(3,1,2);
 plot(x_RTN_circular(:,1), x_RTN_circular(:,3));
-xlabel("R");
-ylabel("N");
+xlabel("R [km]");
+ylabel("N [km]");
 subplot(3,1,3);
 plot(x_RTN_circular(:,2), x_RTN_circular(:,3));
-xlabel("T");
-ylabel("N");
+xlabel("T [km]");
+ylabel("N [km]");
+
 
 % Plot relative velocity in TR, NR, TN plane.
 figure;
-title("Relative position in RTN over time");
 subplot(3,1,1);
 plot(x_RTN_circular(:,4), x_RTN_circular(:,6));
-xlabel("R");
-ylabel("T");
+title("Relative velocity in RTN over time");
+xlabel("R [km/s]");
+ylabel("T [km/s]");
 subplot(3,1,2);
 plot(x_RTN_circular(:,4), x_RTN_circular(:,6));
-xlabel("R");
-ylabel("N");
+xlabel("R [km/s]");
+ylabel("N [km/s]");
 subplot(3,1,3);
 plot(x_RTN_circular(:,5), x_RTN_circular(:,6));
-xlabel("T");
-ylabel("N");
+xlabel("T [km/s]");
+ylabel("N [km/s]");
+

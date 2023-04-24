@@ -27,7 +27,7 @@ nu_1 = deg2rad(0.01);
 oe_d = [a_1; e_1; i_1; RAAN_1; omega_1; nu_1];
 
 % sim parameters
-n_orbits = 3;
+n_orbits = 15;
 n_steps_per_orbit = 30;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_0^3 / mu);
@@ -53,9 +53,6 @@ assert(rho / r0 <= 0.001);
 
 theta = nu_0 + omega_0;
 theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
-
-% Impose artificial constraint to ensure cyclic solution by linear solver.
-v_RTN_d(2) = - 2*sqrt(mu/a_0^3)*r_RTN_d(1);
 
 state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
@@ -123,3 +120,17 @@ plot(x_RTN_circular(:,5), x_RTN_circular(:,6));
 xlabel("T [km/s]");
 ylabel("N [km/s]");
 
+%% e) Propagate with enforcing cyclical constraint on y_dot.
+% Impose artificial constraint to ensure cyclic solution by linear solver.
+v_RTN_d(2) = - 2*sqrt(mu/a_0^3)*r_RTN_d(1);
+
+x_RTN_d_cyclic = [r_RTN_d; v_RTN_d];
+K_cyclic = RTN2HCW_IC(x_RTN_d_cyclic, a_0, 0);
+
+x_RTN_circular_cyclic = zeros(n_iter, 6);
+
+for iter = 1:size(x_RTN_circular, 1)
+    x_RTN_circular_cyclic(iter,:) = HCW_T2RTN(K_cyclic, a_0, tspan(iter));
+end
+
+PlotRTNPaxton(x_RTN_circular_cyclic);

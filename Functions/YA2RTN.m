@@ -1,13 +1,13 @@
-function K = RTN2YA_IC(x_RTN, a, e, f, t)
-    % RTN2YA_IC Convert position and velocity in RTN to integration
-    % constants K using the Yamanaka-Ankersen (YA) solutions to the
-    % Tschauner-Hempel (TH) equations for short range elliptical orbits.
+function x_RTN = YA2RTN(K, a, e, f, t)
+    % YA2RTN converts true anomaly (and time) to RTN using the YA solutions to the TH
+    % equations.
     % Arguments:
-    %   x_RTN must be a 6x1 vector [r_RTN; v_RTN].
-    %   e is the eccentricity of the chief orbit.
-    %   f is the true anomaly of the chief orbit.
+    %   K are the integration constants
+    %   a, e, f are the semi-major axis, eccentricity, and true anomaly of
+    %   the chief, respectively
     % Returns:
-    %   K will be a 6x1 vector.
+    %   x_RTN is the 6x1 position and velocity of the deputy in RTN,
+    %       in the form [r_RTN; v_RTN].
     mu = 3.986e5;
     n = sqrt(mu/a^3);
     k = 1 + e * cos(f);
@@ -23,6 +23,6 @@ function K = RTN2YA_IC(x_RTN, a, e, f, t)
          -3/2 * (k + k^2 * kp * tau), -(k^2 - 1) * sin(f), -e - (k^2 + 1)*cos(f), -kp, 0, 0;
          0, 0, 0, 0, e + cos(f), -sin(f)];
     
-    K = (A*B) \ x_RTN;
+    x_RTN = A * B * K;
 end
 

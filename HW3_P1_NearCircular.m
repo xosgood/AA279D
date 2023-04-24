@@ -32,7 +32,7 @@ n_steps_per_orbit = 30;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_0^3 / mu);
 t_f = n_orbits * T;
-tspan = linspace(0, t_f, n_iter); 
+tspan = linspace(0, t_f, n_iter);
 
 %% b) convert initial conditions to useful coord frames
 [r_ECI_0, v_ECI_0] = OE2ECI(a_0, e_0, i_0, RAAN_0, omega_0, nu_0);
@@ -133,4 +133,4 @@ for iter = 1:size(x_RTN_circular, 1)
     x_RTN_circular_cyclic(iter,:) = HCW_T2RTN(K_cyclic, a_0, tspan(iter));
 end
 
-PlotRTNPaxton(x_RTN_circular_cyclic);
+PlotRTNSpace(x_RTN_circular_cyclic);

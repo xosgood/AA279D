@@ -1,4 +1,4 @@
-function PlotRTNPaxton(x_RTN)
+function PlotRTNSpace(x_RTN)
     % Plot relative position in 3D. 
     figure;
     plot3(x_RTN(:,1), x_RTN(:,2), x_RTN(:,3));

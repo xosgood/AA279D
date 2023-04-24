@@ -4,6 +4,9 @@
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
+% constants
+mu = 3.986e5;
+
 %% a) initial orbits
 % chief
 a_0 = 9000; % km
@@ -44,9 +47,32 @@ assert(rho / r0 <= 0.001);
 % theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
 % state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
-x_RTN_d = [r_RTN_d, v_RTN_d];
+x_RTN_d = [r_RTN_d; v_RTN_d];
 
-K = RTN2YA_IC(x_RTN_d, a_0, e_0, nu_0);
+K = RTN2YA_IC(x_RTN_d, a_0, e_0, nu_0, 0);
 
+%% c) simulate YA solution
+% sim parameters
+n_orbits = 15;
+n_steps_per_orbit = 30;
+n_iter = n_orbits * n_steps_per_orbit;
+nu_step = 2 * pi / n_steps_per_orbit;
+T = 2 * pi * sqrt(a_0^3 / mu);
 
+t = zeros(1, n_iter);
+x_RTN_YA = zeros(6, n_iter);
 
+orbits_passed = 0;
+for iter = 1:n_iter % for each orbit
+    if mod(iter, n_steps_per_orbit) == 1
+        orbits_passed = orbits_passed + 1;
+    end
+    % compute true anomaly for this timestep
+    nu = iter * nu_step;
+    % back out time from true anomaly
+    t(iter) = TrueAnomalyToTime(nu, a_0, e_0) + orbits_passed * T;
+    % propogate using YA solution
+    x_RTN_YA(:,iter) = YA2RTN(K, a_0, e_0, nu, t(iter));
+end
+
+PlotRTNSpace(x_RTN_YA')

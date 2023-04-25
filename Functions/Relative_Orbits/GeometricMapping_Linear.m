@@ -37,10 +37,10 @@ function x_RTN = GeometricMapping_Linear(roe, oe, M_0, dM_0)
     kp = -ex * sin(u) + ey * cos(u);
     eta = sqrt(1 - e^2);
     
-    x_bar = da - k * kp / eta^3 * dl - dex / eta^3 * k * cos(u) - dex / eta^3 * k * sin(u) ...
-          + k / eta^3 * ((k + 1) / (1 + eta)) * (ex * dex + ey * dey) + k * kp / eta^3 * diy * cot(i);
+    x_bar = da - k * kp / eta^3 * dl - dex / eta^3 * k * cos(u) - dey / eta^3 * k * sin(u) ...
+          + k / eta^3 * ((k - 1) / (1 + eta)) * (ex * dex + ey * dey) + k * kp / eta^3 * diy * cot(i);
     y_bar = k^2 / eta^3 * dl + dex / eta^2 * (1 + k) * sin(u) - dey / eta^2 * (1 + k) * cos(u) ...
-          + 1 / eta^2 * (eta + k^2 / (1+eta)) * (ey * dex + ex * dey) + (1 - k^2 / eta^3) * diy * cot(i);
+          + 1 / eta^3 * (eta + k^2 / (1+eta)) * (ey * dex + ex * dey) + (1 - k^2 / eta^3) * diy * cot(i);
     z_bar = dix * sin(u) - diy * cos(u);
     
     x = x_bar * r_c;

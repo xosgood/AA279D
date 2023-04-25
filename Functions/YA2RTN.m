@@ -9,7 +9,7 @@ function x_RTN = YA2RTN(K, a, e, f, t)
     %   x_RTN is the 6x1 position and velocity of the deputy in RTN,
     %       in the form [r_RTN; v_RTN].
     mu = 3.986e5;
-    n = sqrt(mu/a^3);
+    n = sqrt(mu / a^3);
     k = 1 + e * cos(f);
     kp = -e * sin(f);
     eta = sqrt(1 - e^2);

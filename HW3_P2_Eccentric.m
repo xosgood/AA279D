@@ -49,7 +49,7 @@ n_iter = n_orbits * n_steps_per_orbit;
 nu_step = 2 * pi / n_steps_per_orbit;
 T = 2 * pi * sqrt(a_0^3 / mu);
 
-t = zeros(1, n_iter);
+t_YA = zeros(1, n_iter);
 x_RTN_YA = zeros(6, n_iter);
 
 orbits_passed = 0;
@@ -60,13 +60,13 @@ for iter = 1:n_iter % for each orbit
     % compute true anomaly for this timestep
     nu = iter * nu_step;
     % back out time from true anomaly
-    t(iter) = TrueAnomalyToTime(nu, a_0, e_0) + orbits_passed * T;
-    % propogate using YA solution
-    x_RTN_YA(:,iter) = YA2RTN(K, a_0, e_0, nu, t(iter));
+    t_YA(iter) = TrueAnomalyToTime(nu, a_0, e_0) + orbits_passed * T;
+    % propagate using YA solution
+    x_RTN_YA(:,iter) = YA2RTN(K, a_0, e_0, nu, t_YA(iter));
 end
 
 figure(5);
-PlotRTN(t, x_RTN_YA(1:3,:), x_RTN_YA(4:6,:));
+PlotRTN(t_YA, x_RTN_YA(1:3,:), x_RTN_YA(4:6,:));
 
 PlotRTNSpaceMultiple(x_RTN_YA', false);
 
@@ -74,9 +74,38 @@ PlotRTNSpaceMultiple(x_RTN_YA', false);
 % roe = [da, dlambda, dex, dey, dix, diy]^T
 roe = OE2ROE(oe_c, oe_d);
 
-%% f) simulate in roe space
+%% f) simulate with linearized geometric mapping (LGM)
+M_c_0 = TrueToMeanAnomaly(nu_0, e_0);
+M_d_0 = TrueToMeanAnomaly(nu_1, e_1);
+dM_0 = M_d_0 - M_c_0; % delta mean anomaly at time 0
+
+t_LGM = zeros(1, n_iter);
+x_RTN_LGM = zeros(6, n_iter);
+
+orbits_passed = 0;
+for iter = 1:n_iter % for each orbit
+    if mod(iter, n_steps_per_orbit) == 1
+        orbits_passed = orbits_passed + 1;
+    end
+    % compute true anomaly for this timestep
+    nu = iter * nu_step;
+    % back out time from true anomaly
+    t_LGM(iter) = TrueAnomalyToTime(nu, a_0, e_0) + orbits_passed * T;
+    % update chief oe with new true anomaly
+    oe_c_cur = oe_c;
+    oe_c_cur(6) = nu;
+    % propagate using linearized geometric mapping solution
+    x_RTN_LGM(:,iter) = GeometricMapping_Linear(roe, oe_c_cur, M_c_0, dM_0);
+end
+
+figure(6);
+PlotRTN(t_LGM, x_RTN_LGM(1:3,:), x_RTN_LGM(4:6,:));
+
+PlotRTNSpaceMultiple(x_RTN_LGM', false);
 
 %% g) compare ROEs and integration constants
+roe
+K
 
 %% h) Produce the true relative position and velocity from analytical or numerical propogation.
 % sim parameters. 
@@ -100,7 +129,7 @@ PlotRTNSpaceMultiple([state_out(:,1:3), state_out(:,6:8)], true);
 % Propertly label the lines. 
 for iter = 1:4
     figure(iter);
-    legend({'YA solution', 'Non-linear numerical solution'})
+    legend({'YA solution', 'Linear Geometric Mapping solution', 'Non-linear numerical solution'})
 end
 
 hold off;

@@ -32,20 +32,10 @@ oe_d = [a_1; e_1; i_1; RAAN_1; omega_1; nu_1];
 
 [r_RTN_d, v_RTN_d] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
 
-% roe = [da, dlambda, dex, dey, dix, diy]^T
-roe = OE2ROE(oe_c, oe_d);
-
-v_ECI_c_expressedInRTN = rECI2RTN([r_ECI_0; v_ECI_0]) * v_ECI_0;
-
 rho = norm(r_RTN_d);
 r0 = norm(r_ECI_0);
-% r0_dot = v_ECI_c_expressedInRTN(1);
 
 assert(rho / r0 <= 0.001);
-
-% theta = nu_0 + omega_0;
-% theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2; % v0 / r0
-% state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 
 x_RTN_d = [r_RTN_d; v_RTN_d];
 
@@ -75,4 +65,17 @@ for iter = 1:n_iter % for each orbit
     x_RTN_YA(:,iter) = YA2RTN(K, a_0, e_0, nu, t(iter));
 end
 
+figure;
+PlotRTN(t, x_RTN_YA(1:3,:), x_RTN_YA(4:6,:));
+
 PlotRTNSpace(x_RTN_YA')
+
+%% e) compute QNS relative OEs
+% roe = [da, dlambda, dex, dey, dix, diy]^T
+roe = OE2ROE(oe_c, oe_d);
+
+%% f) simulate in roe space
+
+%% g) compare ROEs and integration constants
+
+%% h) 

@@ -47,4 +47,6 @@ function PlotRTNSpace(x_RTN)
     plot(x_RTN(:,5), x_RTN(:,6));
     xlabel("T [km/s]");
     ylabel("N [km/s]");
+
+    hold off;
 end

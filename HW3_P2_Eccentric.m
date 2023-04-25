@@ -4,6 +4,8 @@
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
+f1 = figure(1);
+
 % constants
 mu = 3.986e5;
 
@@ -68,7 +70,7 @@ end
 figure;
 PlotRTN(t, x_RTN_YA(1:3,:), x_RTN_YA(4:6,:));
 
-PlotRTNSpace(x_RTN_YA')
+PlotRTNSpace(x_RTN_YA');
 
 %% e) compute QNS relative OEs
 % roe = [da, dlambda, dex, dey, dix, diy]^T
@@ -78,4 +80,22 @@ roe = OE2ROE(oe_c, oe_d);
 
 %% g) compare ROEs and integration constants
 
-%% h) 
+%% h) Produce the true relative position and velocity from analytical or numerical propogation.
+% sim parameters. 
+t_f = n_orbits * T;
+tspan = linspace(0, t_f, n_iter);
+
+v_ECI_c_expressedInRTN = rECI2RTN([r_ECI_0; v_ECI_0]) * v_ECI_0;
+
+r0 = norm(r_ECI_0);
+r0_dot = v_ECI_c_expressedInRTN(1);
+
+theta = nu_0 + omega_0;
+theta_dot = norm(cross(r_ECI_0, v_ECI_0))/r0^2;
+state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
+
+options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
+[t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
+
+PlotRTNSpace([state_out(:,1:3), state_out(:,4:6)]);
+

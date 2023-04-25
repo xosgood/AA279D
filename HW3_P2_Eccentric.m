@@ -4,8 +4,6 @@
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
-f1 = figure(1);
-
 % constants
 mu = 3.986e5;
 
@@ -67,10 +65,10 @@ for iter = 1:n_iter % for each orbit
     x_RTN_YA(:,iter) = YA2RTN(K, a_0, e_0, nu, t(iter));
 end
 
-figure;
+figure(5);
 PlotRTN(t, x_RTN_YA(1:3,:), x_RTN_YA(4:6,:));
 
-PlotRTNSpace(x_RTN_YA');
+PlotRTNSpaceMultiple(x_RTN_YA', false);
 
 %% e) compute QNS relative OEs
 % roe = [da, dlambda, dex, dey, dix, diy]^T
@@ -97,5 +95,6 @@ state0 = [r_RTN_d; theta; r0; v_RTN_d; theta_dot; r0_dot];
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
 [t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
 
-PlotRTNSpace([state_out(:,1:3), state_out(:,4:6)]);
+PlotRTNSpaceMultiple([state_out(:,1:3), state_out(:,6:8)], true);
+hold off;
 

@@ -28,10 +28,16 @@ function PlotRTNSpaceMultiple(x_RTN, last_call)
     title("Relative position in RTN over time");
     xlabel("T [km]");
     ylabel("R [km]");
+    if (~last_call)
+        hold on;
+    end
     subplot(3,1,2);
     plot(x_RTN(:,3), x_RTN(:,1));
     xlabel("N [km]");
     ylabel("R [km]");
+    if (~last_call)
+        hold on;
+    end
     subplot(3,1,3);
     plot(x_RTN(:,2), x_RTN(:,3));
     xlabel("T [km]");
@@ -47,10 +53,16 @@ function PlotRTNSpaceMultiple(x_RTN, last_call)
     title("Relative velocity in RTN over time");
     xlabel("T [km/s]");
     ylabel("R [km/s]");
+    if (~last_call)
+        hold on;
+    end
     subplot(3,1,2);
     plot(x_RTN(:,6), x_RTN(:,4));
     xlabel("N [km/s]");
     ylabel("R [km/s]");
+    if (~last_call)
+        hold on;
+    end
     subplot(3,1,3);
     plot(x_RTN(:,5), x_RTN(:,6));
     xlabel("T [km/s]");

@@ -1,6 +1,6 @@
 function PlotRTNSpace(x_RTN)
     % Plot relative position in 3D. 
-    figure(1);
+    figure;
     plot3(x_RTN(:,1), x_RTN(:,2), x_RTN(:,3));
     xlabel("R [km]");
     ylabel("T [km]");
@@ -8,7 +8,7 @@ function PlotRTNSpace(x_RTN)
     title("Relative position in RTN over time.")
     
     % Plot relative velocity in 3D. 
-    figure(2);
+    figure;
     plot3(x_RTN(:,4), x_RTN(:,5), x_RTN(:,6));
     xlabel("R [km/s]");
     ylabel("T [km/s]");
@@ -16,7 +16,7 @@ function PlotRTNSpace(x_RTN)
     title("Relative velocity in RTN over time. ")
     
     % Plot relative position in TR, NR, TN plane.
-    figure(3);
+    figure;
     subplot(3,1,1);
     plot(x_RTN(:,2), x_RTN(:,1));
     title("Relative position in RTN over time");
@@ -32,7 +32,7 @@ function PlotRTNSpace(x_RTN)
     ylabel("N [km]");
     
     % Plot relative velocity in TR, NR, TN plane.
-    figure(4);
+    figure;
     subplot(3,1,1);
     plot(x_RTN(:,5), x_RTN(:,4));
     title("Relative velocity in RTN over time");

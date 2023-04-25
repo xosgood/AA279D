@@ -96,5 +96,12 @@ options = odeset('RelTol', 1e-9, 'AbsTol', 1e-9);
 [t, state_out] = ode113(@RelativeMotionDifEqRTN, tspan, state0, options);
 
 PlotRTNSpaceMultiple([state_out(:,1:3), state_out(:,6:8)], true);
+
+% Propertly label the lines. 
+for iter = 1:4
+    figure(iter);
+    legend({'YA solution', 'Non-linear numerical solution'})
+end
+
 hold off;
 

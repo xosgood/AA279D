@@ -103,7 +103,6 @@ plot(x_RTN_circular(:,2), x_RTN_circular(:,3));
 xlabel("T [km]");
 ylabel("N [km]");
 
-
 % Plot relative velocity in TR, NR, TN plane.
 figure;
 subplot(3,1,1);

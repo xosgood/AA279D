@@ -1,6 +1,6 @@
 % Paxton Scott and Chris Osgood
 % 4/21/23
-% AA279D HW3 P2
+% AA279D HW3 P2(h)(ii)
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
@@ -9,8 +9,8 @@ mu = 3.986e5;
 
 %% a) initial orbits
 % chief
-a_0 = 9000; % km
-e_0 = 0.2;
+a_0 = 23000; % km
+e_0 = 0.7;
 i_0 = deg2rad(98);
 RAAN_0 = 0;
 omega_0 = deg2rad(90);
@@ -19,7 +19,7 @@ oe_c = [a_0; e_0; i_0; RAAN_0; omega_0; nu_0];
 
 % deputy
 a_1 = a_0;
-e_1 = 0.1999;
+e_1 = 0.7;
 i_1 = deg2rad(98.01);
 RAAN_1 = deg2rad(0.05);
 omega_1 = deg2rad(90.05);
@@ -32,8 +32,8 @@ oe_d = [a_1; e_1; i_1; RAAN_1; omega_1; nu_1];
 
 [r_RTN_d, v_RTN_d] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
 
-rho = norm(r_RTN_d);
-r0 = norm(r_ECI_0);
+rho = norm(r_RTN_d)
+r0 = norm(r_ECI_0)
 
 assert(rho / r0 <= 0.001);
 

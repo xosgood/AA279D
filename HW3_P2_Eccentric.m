@@ -145,7 +145,7 @@ error_YA = abs(x_RTN_YA - x_RTN');
 error_LGM = abs(x_RTN_LGM - x_RTN');
 figure(8);
 PlotRTN(t, error_YA(1:3,:), error_YA(4:6,:));
-sgtitle("Error in RTN between YA solution and nonlinear solution")
+sgtitle("Error in RTN from nonlinear solution")
 figure(9);
 PlotRTN(t, error_LGM(1:3,:), error_LGM(4:6,:));
 sgtitle("Error in RTN between linear geometric mapping solution and nonlinear solution")

@@ -40,6 +40,8 @@ tspan = linspace(0, t_f, n_iter);
 
 [r_RTN_d, v_RTN_d] = ECI2RTN(r_ECI_0, v_ECI_0, r_ECI_1, v_ECI_1);
 
+roe_singular = oe_d - oe_c;
+
 % roe = [da, dlambda, dex, dey, dix, diy]^T
 roe = OE2ROE(oe_c, oe_d);
 

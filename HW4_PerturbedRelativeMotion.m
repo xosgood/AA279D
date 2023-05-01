@@ -22,7 +22,12 @@ oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
 
 oe_d = ROE2OE(oe_c, roe_d);
-[a_d; e_d; i_d; RAAN_d; omega_d; nu_d]  = oe_d;
+a_d = oe_d(1);
+e_d = oe_d(2);
+i_d = oe_d(3);
+RAAN_d = oe_d(4);
+omega_d = oe_d(5);
+nu_d =oe_d(6);
 
 
 %% 3) full non-linear simulation
@@ -62,6 +67,27 @@ PlotEarth();
 plot3(r_ECI_c(1,:), r_ECI_c(2,:), r_ECI_c(3,:), 'r.');
 plot3(r_ECI_d(1,:), r_ECI_d(2,:), r_ECI_d(3,:), 'g.');
 title("Absolute ECI Orbits");
-legend("Chief", "Deputy");
+%legend("", "Chief", "Deputy");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
+
+abs_data_c_j2 = SimulateOrbitFromOE_WithJ2(a_c, e_c, i_c, RAAN_c, omega_c, M_c, geod_station, t_0_MJD, t_f_MJD, n_iter);
+abs_data_d_j2 = SimulateOrbitFromOE_WithJ2(a_d, e_d, i_d, RAAN_d, omega_d, M_d, geod_station, t_0_MJD, t_f_MJD, n_iter);
+
+r_ECI_c_j2 = abs_data_c_j2.r_ECI_vec;
+v_ECI_c_j2 = abs_data_c_j2.v_ECI_vec;
+r_ECI_d_j2 = abs_data_d_j2.r_ECI_vec;
+v_ECI_d_j2 = abs_data_d_j2.v_ECI_vec;
+
+% turn ECI to RTN for deputy state.
+[r_RTN_abssim_j2, v_RTN_abssim_j2] = ECI2RTN_Vectorized(r_ECI_c_j2, v_ECI_c_j2, r_ECI_d_j2, v_ECI_d_j2);
+
+% plot orbits in ECI with the j2 effect. 
+figure;
+PlotEarth();
+plot3(r_ECI_c_j2(1,:), r_ECI_c_j2(2,:), r_ECI_c_j2(3,:), 'r.');
+plot3(r_ECI_d_j2(1,:), r_ECI_d_j2(2,:), r_ECI_d_j2(3,:), 'g.');
+title("Absolute ECI Orbits");
+legend("", "Chief", "Deputy");
+xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
+
 

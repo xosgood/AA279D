@@ -90,4 +90,40 @@ title("Absolute ECI Orbits");
 legend("", "Chief", "Deputy");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
+% convert r, v in time series into orbital elements.
+oe_c_series = zeros(6, n_iter);
+oe_d_series = zeros(6, n_iter);
+oe_c_j2_series = zeros(6, n_iter);
+oe_d_j2_series = zeros(6, n_iter);
+
+QNS_oe_c_series = zeros(6, n_iter);
+QNS_oe_d_series = zeros(6, n_iter);
+QNS_oe_c_j2_series = zeros(6, n_iter);
+QNS_oe_d_j2_series = zeros(6, n_iter);
+
+for iter = 1:size(r_ECI_c,2)
+    oe_d_series(:, iter) = ECI2OE(r_ECI_d(:, iter), v_ECI_d(:, iter));
+    oe_c_series(:, iter) = ECI2OE(r_ECI_c(:, iter), v_ECI_c(:, iter));
+    oe_d_j2_series(:, iter) = ECI2OE(r_ECI_d_j2(:, iter), v_ECI_d_j2(:, iter));
+    oe_c_j2_series(:, iter) = ECI2OE(r_ECI_c_j2(:, iter), v_ECI_c_j2(:, iter));
+
+    % a. Osculating quasi-non-singular orbital elements. 
+
+    %QNS_oe_d_series = OE2QNS_OE(oe_d_series(:, iter));
+    %QNS_oe_c_series = OE2QNS_OE(oe_c_series(:, iter));
+    %QNS_oe_d_j2_series = OE2QNS_OE(oe_d_j2_series(:, iter));
+    %QNS_oe_c_j2_series = OE2QNS_OE(oe_c_j2_series(:, iter));
+
+    % b. Osculating relative quasi-non-singular orbital elements.
+
+    %QNS_relative_oe = OE2ROE(oe_c_series(:, iter), oe_d_series(:, iter));
+    %QNS_reltive_oe_j2 = OE2ROE(oe_c_j2_series(:, iter), oe_d_j2_series(:, iter));
+end
+
+
+
+% c. Mean quasi-non-singular orbital elements. 
+
+% d. Mean relative quasi-non-singular orbital elements. 
+
 

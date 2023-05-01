@@ -10,6 +10,5 @@ function oe_qns = OE2QNS_OE(oe)
     ex = e * cos(omega);
     ey = e * sin(omega);
 
-    oe_qns = [a, u, ex, ey, i, RAAN];
-    
+    oe_qns = [a; u; ex; ey; i; RAAN];
 end

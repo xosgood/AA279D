@@ -1,4 +1,4 @@
-function [a, e, i, RAAN, omega, nu] = ECI2OE(r_ECI, v_ECI)
+function oe = ECI2OE(r_ECI, v_ECI)
     % ECI2OE converts position and velocity vectors in the ECI frame to the
     % 6 keplerian orbital elements. Note that this assumes the central body
     % is the Earth.
@@ -19,4 +19,6 @@ function [a, e, i, RAAN, omega, nu] = ECI2OE(r_ECI, v_ECI)
     u = atan2( r_ECI(3) / sin(i), r_ECI(1) * cos(RAAN) + r_ECI(2) * sin(RAAN) );
     omega = wrapTo2Pi(u - nu);
     RAAN = wrapTo2Pi(RAAN);
+    
+    oe = [a; e; i; RAAN; omega; nu];
 end

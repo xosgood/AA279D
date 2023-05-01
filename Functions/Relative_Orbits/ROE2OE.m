@@ -13,50 +13,36 @@ function oe_d = ROE2OE(oe_c, roe_d)
     nu_c = oe_c(6);
     M_c = TrueToMeanAnomaly(nu_c, e_c);
 
-    ex_c = e_c * cos(omega_c);
-    ey_c = e_c * sin(omega_c);
+    [ex_c, ey_c] = DecomposeEccentricity(e_c, omega_c);
 
     % Argument of lattitude.
     u_c = nu_c + omega_c;
     
-    % initialize deputy elements
-    oe_d = zeros(size(oe_c));
+    da = roe_d(1);
+    dlambda = roe_d(2);
+    dex = roe_d(3);
+    dey = roe_d(4);
+    dix = roe_d(5);
+    diy = roe_d(6);
     
-    dRAAN = roe_d(5) / a_c * sin(i_c);
-    du = (roe_d(1) / a_c) - (dRAAN * cos(i_c));
-
-    a_d = a_c + roe_d(1);
-    ex_d = ex_c + roe_d(3) / a_c;
-    ey_d = ey_c + roe_d(4) / a_c;
-    i_d = i_c + roe_d(5) / a_c;
-    RAAN_d = RAAN_c + dRAAN;
-    u_d = u_c + du;
+    a_d = a_c + a_c * da;
     
-    % e as a function of e_x and e_y.
+    i_d = i_c + dix;
+    
+    ex_d = ex_c + dex;
+    ey_d = ey_c + dey;
     e_d = sqrt(ex_d^2 + ey_d^2);
-
-    % omega as a function of ey_d, ex_d.
-    omega_d = atan2(ey_d, ex_d);
-
-    % true anomoly as a function of argument of lattitude and preapsis. 
-    nu_d = u_d - omega_d;
-
-    oe_d = [a_d; e_d; i_d; RAAN_d; omega_d; nu_d];
-
     
-%     /* Compute difference in RAAN */
-%     dO = roe(5) / (ac * sin(ic));
-%     /* Compute difference in mean argument of latitude */
-%     du = (roe(1) / ac) - (dO * cos(ic));
-% 
-%     /* Compute deputy keplerian orbit elements */
-%     ad = ac + roe(0);
-%     exd = exc + (roe(2) / ac);
-%     eyd = eyc + (roe(3) / ac);
-%     id = ic + (roe(4) / ac);
-%     Od = Oc + dO;
-%     ud = uc + du;
-% 
-%     orbit_d = { ad, exd, eyd, id, Od, ud };
+    omega_d = atan2(ey_d, ex_d);
+    
+    dRAAN = diy / sin(i_c);
+    RAAN_d = RAAN_c + dRAAN;
+    
+    domega = omega_d - omega_c;
+    dM = dlambda - domega - dRAAN * cos(i_c);
+    M_d = M_c + dM;
+    nu_d = MeanToTrueAnomaly(M_d, e_d);
+    
+    oe_d = [a_d; e_d; i_d; RAAN_d; omega_d; nu_d];
 end
 

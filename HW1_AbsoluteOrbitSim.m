@@ -261,12 +261,12 @@ end
 function statedot = func(t, state)
     % State vector is [rx ry rz vx vy vz]’.
     % Although required by form, input value t will go unused here.
-        mu = 3.986e5; % (km^3 / s^2)
-        r = state(1:3);
-        rdot = state(4:6);
-        vdot = CentralBodyAccel(mu, r);
-        statedot = [rdot;
-                    vdot];
+    mu = 3.986e5; % (km^3 / s^2)
+    r = state(1:3);
+    rdot = state(4:6);
+    vdot = CentralBodyAccel(mu, r);
+    statedot = [rdot;
+                vdot];
 end
 
 function statedot = func_J2(t, state)

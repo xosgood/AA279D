@@ -227,10 +227,15 @@ sgtitle("Planar Relative position in RTN, with J2");
 
 %% 5) QNS plots
 % figures 13-15
+figure(13);
 PlotQNSROE_meters(QNS_roe_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
+sgtitle("Relative Motion, without J2");
 
+figure(14);
 PlotQNSROE_meters(QNS_roe_j2_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_j2_series, a_c*1000);
+sgtitle("Relative Motion, with J2");
+
 
 %% 6) 

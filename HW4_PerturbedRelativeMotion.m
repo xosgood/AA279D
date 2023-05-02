@@ -263,7 +263,12 @@ RAAN_d = oe_d(4);
 omega_d = oe_d(5);
 nu_d = oe_d(6);
 
-[r_d_0_ECI, v_d_0_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
+[r_d_0_new_ECI, v_d_0_new_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
+x_d_0_new = [r_d_0_new_ECI; v_d_0_new_ECI];
+
+[~, x_d_j2_new_ECI] = ode113(@func_J2, tspan, x_d_0_new, options);
+
+
 
 
 %% ODE Functions

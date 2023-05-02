@@ -175,7 +175,7 @@ for iter = 1:size(r_c_ECI,2)
 end
 
 %%% Plotting
-% plotting qns oe
+% plotting qns oe without J2
 ylabels = ["a [km]", "u [rad]", "e_x", "e_y", "i [rad]", "RAAN [rad]"];
 figure(3);
 PlotOEvsTime(tspan, QNS_oe_c_series, ylabels);
@@ -190,6 +190,7 @@ subplot(6,1,1);
 legend("Osculating", "Mean", "Location", "best");
 sgtitle("Deputy quasi non-singular mean and osculating orbital elements vs time, without J2");
 
+% plotting qns oe with J2
 figure(5);
 PlotOEvsTime(tspan, QNS_oe_c_j2_series, ylabels);
 PlotOEvsTime(tspan, QNS_oe_c_mean_j2_series, ylabels);
@@ -203,7 +204,7 @@ subplot(6,1,1);
 legend("Osculating", "Mean", "Location", "best");
 sgtitle("Deputy quasi non-singular mean and osculating orbital elements vs time, with J2");
 
-% plotting qns roe
+% plotting qns roe without J2
 ylabels = ["a \delta a [m]", "a \delta \lambda [m]", "a \delta e_x [m]", "a \delta e_y [m]", "\delta i_x [m]", "\delta i_y [m]"];
 figure(7);
 PlotOEvsTime(tspan, 1000 * oe_c_series(1,:) .* QNS_roe_series, ylabels);
@@ -212,6 +213,7 @@ subplot(6,1,1);
 legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative quasi non-singular mean and osculating relative orbital elements vs time, without J2");
 
+% plotting qns roe with J2
 figure(8);
 PlotOEvsTime(tspan, 1000 * oe_c_j2_series(1,:) .* QNS_roe_j2_series, ylabels);
 PlotOEvsTime(tspan, 1000 * oe_c_mean_j2_series(1,:) .* QNS_roe_mean_j2_series, ylabels);
@@ -249,11 +251,9 @@ subplot(3,1,1);
 legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative Motion, with J2");
 
-%% 6) 
-
-%% 7)
+%% 6+7)
 % new deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
-roe_d = [0; 0.100; 0.050; 0.100; 0.000; 0.200] / a_c ; % [m]
+roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
 
 oe_d = ROE2OE(oe_c, roe_d);
 a_d = oe_d(1);
@@ -267,8 +267,18 @@ nu_d = oe_d(6);
 x_d_0_new = [r_d_0_new_ECI; v_d_0_new_ECI];
 
 [~, x_d_j2_new_ECI] = ode113(@func_J2, tspan, x_d_0_new, options);
+x_d_j2_new_ECI = x_d_j2_new_ECI';
 
+r_d_j2_ECI_new = x_d_j2_new_ECI(1:3,:);
+v_d_j2_ECI_new = x_d_j2_new_ECI(4:6,:);
 
+[r_j2_RTN_new, v_j2_RTN_new] = ECI2RTN_Vectorized(r_c_j2_ECI, v_c_j2_ECI, r_d_j2_ECI_new, v_d_j2_ECI_new);
+
+PlotRTNSpace_meters(1000 * [r_j2_RTN_new; v_j2_RTN_new]');
+figure(15);
+sgtitle("3D Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
+figure(16);
+sgtitle("Planar Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
 
 
 %% ODE Functions

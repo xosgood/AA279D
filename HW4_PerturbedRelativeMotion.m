@@ -53,7 +53,7 @@ oe_d_osc_j2 = mean2osc(oe_d_mean, 1);
 %% 3) full non-linear simulation
 %%% simulate
 % sim parameters
-n_orbits = 45;
+n_orbits = 15;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)

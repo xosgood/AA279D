@@ -47,6 +47,9 @@ oe_d_osc_j2 = mean2osc(oe_d_mean, 1);
 [r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc_j2(1)/1000, oe_d_osc_j2(2), oe_d_osc_j2(3), ...
     oe_d_osc_j2(4), oe_d_osc_j2(5), MeanToTrueAnomaly(oe_d_osc_j2(6), oe_d_osc_j2(2)));
 
+% For the J2 r_d, v_d we need to transform to oscculating before going to
+% ECI. 
+
 %% 3) full non-linear simulation
 %%% simulate
 % sim parameters
@@ -299,6 +302,21 @@ figure(15);
 sgtitle("3D Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
 figure(16);
 sgtitle("Planar Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
+
+%% 8) Now consider the linearized analytical solution for the secular evolution of the relative orbital elements.
+QNS_oe_d_mean_series_STM_j2 = zeros(6, n_iter);
+QNS_oe_d_mean_series_STM_j2(:, 1) = QNS_roe_j2_series(:, iter);
+dt = tspan(2) - tspan(1);
+for iter = 2:n_iter
+    QNS_oe_d_mean_series_STM_j2(:, iter) = STM_QNS_ROE_J2(QNS_oe_c_j2_series(:,iter), QNS_oe_d_mean_series_STM_j2(:,iter-1), dt);
+end
+
+figure(17);
+PlotQNSROE_meters(QNS_oe_d_mean_series_STM_j2, a_c*1000);
+subplot(3,1,1);
+legend("Osculating","Location", "best");
+sgtitle("Relative Motion, with J2");
+
 
 
 %% ODE Functions

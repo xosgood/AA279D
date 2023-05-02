@@ -17,6 +17,8 @@ omega_c = deg2rad(90);
 nu_c = 0;
 oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
+[r_c_0_ECI, v_c_0_ECI] = OE2ECI(a_c, e_c, i_c, RAAN_c, omega_c, nu_c);
+
 %% 2) initial deputy roe
 % deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
 roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
@@ -29,9 +31,10 @@ RAAN_d = oe_d(4);
 omega_d = oe_d(5);
 nu_d = oe_d(6);
 
+[r_d_0_ECI, v_d_0_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
 
 %% 3) full non-linear simulation
-
+%%% simulate
 % sim parameters
 n_orbits = 15;
 n_steps_per_orbit = 30;
@@ -39,56 +42,54 @@ n_iter = n_steps_per_orbit * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
-tspan = linspace(0, t_f, n_iter); % [0, t_f];
+tspan = linspace(0, t_f, n_iter) ; % [0, t_f];
 
-% set times
-t_0_MJD = mjuliandate(2023,07,04,12,0,0); % 07/04/2023 converted to MJD
-sec_per_day = 86400;
-t_f_MJD = t_0_MJD + n_orbits * T / sec_per_day;
-geod_station = [0; 0; 0]; % fake value since we don't care about this
+x_c_0 = [r_c_0_ECI; v_c_0_ECI];
+x_d_0 = [r_d_0_ECI; v_d_0_ECI];
 
-M_c = TrueToMeanAnomaly(nu_c, e_c);
-M_d = TrueToMeanAnomaly(nu_d, e_d);
+options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
+[~, x_c_ECI] = ode113(@func, tspan, x_c_0, options);
+[~, x_d_ECI] = ode113(@func, tspan, x_d_0, options);
+[~, x_c_j2_ECI] = ode113(@func_J2, tspan, x_c_0, options);
+[t, x_d_j2_ECI] = ode113(@func_J2, tspan, x_d_0, options);
 
-abs_data_c = SimulateOrbitFromOE(a_c, e_c, i_c, RAAN_c, omega_c, M_c, geod_station, t_0_MJD, t_f_MJD, n_iter);
-abs_data_d = SimulateOrbitFromOE(a_d, e_d, i_d, RAAN_d, omega_d, M_d, geod_station, t_0_MJD, t_f_MJD, n_iter);
+x_c_ECI = x_c_ECI';
+x_d_ECI = x_d_ECI';
+x_c_j2_ECI = x_c_j2_ECI';
+x_d_j2_ECI = x_d_j2_ECI';
 
-r_ECI_c = abs_data_c.r_ECI_vec;
-v_ECI_c = abs_data_c.v_ECI_vec;
-r_ECI_d = abs_data_d.r_ECI_vec;
-v_ECI_d = abs_data_d.v_ECI_vec;
-
-% turn ECI to RTN for deputy state
-[r_RTN_abssim, v_RTN_abssim] = ECI2RTN_Vectorized(r_ECI_c, v_ECI_c, r_ECI_d, v_ECI_d);
+r_c_ECI = x_c_ECI(1:3,:);
+v_c_ECI = x_c_ECI(4:6,:);
+r_d_ECI = x_d_ECI(1:3,:);
+v_d_ECI = x_d_ECI(4:6,:);
+r_c_j2_ECI = x_c_j2_ECI(1:3,:);
+v_c_j2_ECI = x_c_j2_ECI(4:6,:);
+r_d_j2_ECI = x_d_j2_ECI(1:3,:);
+v_d_j2_ECI = x_d_j2_ECI(4:6,:);
 
 % plot orbits in ECI
 figure(1);
 PlotEarth();
-plot3(r_ECI_c(1,:), r_ECI_c(2,:), r_ECI_c(3,:), 'r');
-plot3(r_ECI_d(1,:), r_ECI_d(2,:), r_ECI_d(3,:), 'g');
+plot3(r_c_ECI(1,:), r_c_ECI(2,:), r_c_ECI(3,:), 'r');
+plot3(r_d_ECI(1,:), r_d_ECI(2,:), r_d_ECI(3,:), 'g');
 title("Absolute ECI Orbits, without J2");
 legend("Earth", "Chief", "Deputy", "Location", "best");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
-abs_data_c_j2 = SimulateOrbitFromOE_WithJ2(a_c, e_c, i_c, RAAN_c, omega_c, M_c, geod_station, t_0_MJD, t_f_MJD, n_iter);
-abs_data_d_j2 = SimulateOrbitFromOE_WithJ2(a_d, e_d, i_d, RAAN_d, omega_d, M_d, geod_station, t_0_MJD, t_f_MJD, n_iter);
-
-r_ECI_c_j2 = abs_data_c_j2.r_ECI_vec;
-v_ECI_c_j2 = abs_data_c_j2.v_ECI_vec;
-r_ECI_d_j2 = abs_data_d_j2.r_ECI_vec;
-v_ECI_d_j2 = abs_data_d_j2.v_ECI_vec;
-
-% turn ECI to RTN for deputy state.
-[r_RTN_abssim_j2, v_RTN_abssim_j2] = ECI2RTN_Vectorized(r_ECI_c_j2, v_ECI_c_j2, r_ECI_d_j2, v_ECI_d_j2);
-
-% plot orbits in ECI with the j2 effect. 
+% plot orbits in ECI with the J2 effect
 figure(2);
 PlotEarth();
-plot3(r_ECI_c_j2(1,:), r_ECI_c_j2(2,:), r_ECI_c_j2(3,:), 'r');
-plot3(r_ECI_d_j2(1,:), r_ECI_d_j2(2,:), r_ECI_d_j2(3,:), 'g');
+plot3(r_c_j2_ECI(1,:), r_c_j2_ECI(2,:), r_c_j2_ECI(3,:), 'r');
+plot3(r_d_j2_ECI(1,:), r_d_j2_ECI(2,:), r_d_j2_ECI(3,:), 'g');
 title("Absolute ECI Orbits, with J2");
 legend("Earth", "Chief", "Deputy", "Location", "best");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
+
+
+%%% Conversions
+% convert to RTN
+[r_RTN, v_RTN] = ECI2RTN_Vectorized(r_c_ECI, v_c_ECI, r_d_ECI, v_d_ECI);
+[r_j2_RTN, v_j2_RTN] = ECI2RTN_Vectorized(r_c_j2_ECI, v_c_j2_ECI, r_d_j2_ECI, v_d_j2_ECI);
 
 % convert r, v in time series into orbital elements.
 oe_c_series = zeros(6, n_iter);
@@ -117,11 +118,11 @@ QNS_oe_d_mean_j2_series = zeros(6, n_iter);
 QNS_roe_mean_series = zeros(6, n_iter);
 QNS_roe_mean_j2_series = zeros(6, n_iter);
 
-for iter = 1:size(r_ECI_c,2)
-    oe_c_series(:, iter) = ECI2OE(r_ECI_c(:, iter), v_ECI_c(:, iter))';
-    oe_d_series(:, iter) = ECI2OE(r_ECI_d(:, iter), v_ECI_d(:, iter))';
-    oe_c_j2_series(:, iter) = ECI2OE(r_ECI_c_j2(:, iter), v_ECI_c_j2(:, iter))';
-    oe_d_j2_series(:, iter) = ECI2OE(r_ECI_d_j2(:, iter), v_ECI_d_j2(:, iter))';
+for iter = 1:size(r_c_ECI,2)
+    oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
+    oe_d_series(:, iter) = ECI2OE(r_d_ECI(:, iter), v_d_ECI(:, iter))';
+    oe_c_j2_series(:, iter) = ECI2OE(r_c_j2_ECI(:, iter), v_c_j2_ECI(:, iter))';
+    oe_d_j2_series(:, iter) = ECI2OE(r_d_j2_ECI(:, iter), v_d_j2_ECI(:, iter))';
 
     % a. Osculating quasi-non-singular orbital elements
     QNS_oe_c_series(:, iter) = OE2QNS_OE(oe_c_series(:, iter));
@@ -173,6 +174,7 @@ for iter = 1:size(r_ECI_c,2)
     QNS_roe_mean_j2_series(:, iter) = OE2ROE(oe_c_mean_j2_series(:, iter), oe_d_mean_j2_series(:, iter));
 end
 
+%%% Plotting
 % plotting qns oe
 ylabels = ["a [km]", "u [rad]", "e_x", "e_y", "i [rad]", "RAAN [rad]"];
 figure(3);
@@ -198,28 +200,28 @@ legend("Osculating", "Mean");
 sgtitle("Deputy quasi non-singular mean and osculating orbital elements vs time, with J2");
 
 % plotting qns roe
-ylabels = ["\delta a", "\delta \lambda", "\delta e_x", "\delta e_y", "\delta i_x", "\delta i_y"];
+ylabels = ["a \delta a [m]", "a \delta \lambda [m]", "a \delta e_x [m]", "a \delta e_y [m]", "\delta i_x [m]", "\delta i_y [m]"];
 figure(7);
-PlotOEvsTime(tspan, QNS_roe_series, ylabels);
-PlotOEvsTime(tspan, QNS_roe_mean_series, ylabels);
+PlotOEvsTime(tspan, 1000 * oe_c_series(1,:) .* QNS_roe_series, ylabels);
+PlotOEvsTime(tspan, 1000 * oe_c_mean_series(1,:) .* QNS_roe_mean_series, ylabels);
 legend("Osculating", "Mean");
 sgtitle("Relative quasi non-singular mean and osculating relative orbital elements vs time, without J2");
 
 figure(8);
-PlotOEvsTime(tspan, QNS_roe_j2_series, ylabels);
-PlotOEvsTime(tspan, QNS_roe_mean_j2_series, ylabels);
+PlotOEvsTime(tspan, 1000 * oe_c_j2_series(1,:) .* QNS_roe_j2_series, ylabels);
+PlotOEvsTime(tspan, 1000 * oe_c_mean_j2_series(1,:) .* QNS_roe_mean_j2_series, ylabels);
 legend("Osculating", "Mean");
 sgtitle("Relative quasi non-singular mean and osculating relative orbital elements vs time, with J2");
 
 %% 4) RTN plots
 % figures 9-12
-PlotRTNSpace_meters(1000 * [r_RTN_abssim; v_RTN_abssim]');
+PlotRTNSpace_meters(1000 * [r_RTN; v_RTN]');
 figure(9);
 sgtitle("3D Relative position in RTN, without J2");
 figure(10);
 sgtitle("Planar Relative position in RTN, without J2");
 
-PlotRTNSpace_meters(1000 * [r_RTN_abssim_j2; v_RTN_abssim_j2]');
+PlotRTNSpace_meters(1000 * [r_j2_RTN; v_j2_RTN]');
 figure(11);
 sgtitle("3D Relative position in RTN, with J2");
 figure(12);
@@ -239,3 +241,29 @@ sgtitle("Relative Motion, with J2");
 
 
 %% 6) 
+
+
+%% ODE Functions
+function statedot = func(t, state)
+    % State vector is [rx ry rz vx vy vz]’.
+    % Although required by form, input value t will go unused here.
+    mu = 3.986e5; % (km^3 / s^2)
+    r = state(1:3);
+    rdot = state(4:6);
+    vdot = CentralBodyAccel(mu, r);
+    statedot = [rdot;
+                vdot];
+end
+
+function statedot = func_J2(t, state)
+    % State vector is [rx ry rz vx vy vz]’.
+    % Although required by form, input value t will go unused here.
+    mu = 3.986e5; % (km^3 / s^2) for earth
+    R_E = 6378.1; % equatorial radius of earth in km
+    J2 = 0.108263e-2; % for earth
+    r = state(1:3);
+    rdot = state(4:6);
+    vdot = CentralBodyAccel(mu, r) + J2AccelECI(J2, mu, R_E, r(1), r(2), r(3));
+    statedot = [rdot;
+                vdot];
+end

@@ -8,35 +8,49 @@ addpath(genpath("Functions/"));
 % constants
 mu = 3.986e5;
 
-% chief OE
+% chief mean OE
 a_c = 7000; % km
 e_c = 0.001;
 i_c = deg2rad(98);
 RAAN_c = 0;
 omega_c = deg2rad(90);
 nu_c = 0;
+M_c = TrueToMeanAnomaly(nu_c, e_c);
 oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
+oe_c_mean = [1000 * a_c; e_c; i_c; RAAN_c; omega_c; M_c]; % for mean2osc, needs it in meters, and Mean anomaly
+oe_c_osc_j2 = mean2osc(oe_c_mean, 1);
+
 [r_c_0_ECI, v_c_0_ECI] = OE2ECI(a_c, e_c, i_c, RAAN_c, omega_c, nu_c);
+[r_c_osc_0_ECI, v_c_osc_0_ECI] = OE2ECI(oe_c_osc_j2(1)/1000, oe_c_osc_j2(2), oe_c_osc_j2(3), ...
+    oe_c_osc_j2(4), oe_c_osc_j2(5), MeanToTrueAnomaly(oe_c_osc_j2(6), oe_c_osc_j2(2)));
 
 %% 2) initial deputy roe
-% deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
+% deputy mean ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
 roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
 
-oe_d = ROE2OE(oe_c, roe_d);
+oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
 i_d = oe_d(3);
 RAAN_d = oe_d(4);
 omega_d = oe_d(5);
 nu_d = oe_d(6);
+M_d = TrueToMeanAnomaly(nu_d, e_d);
+
+oe_d_mean = oe_d;
+oe_d_mean(1) = oe_d_mean(1) * 1000;
+oe_d_mean(6) = M_d;
+oe_d_osc_j2 = mean2osc(oe_d_mean, 1);
 
 [r_d_0_ECI, v_d_0_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
+[r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc_j2(1)/1000, oe_d_osc_j2(2), oe_d_osc_j2(3), ...
+    oe_d_osc_j2(4), oe_d_osc_j2(5), MeanToTrueAnomaly(oe_d_osc_j2(6), oe_d_osc_j2(2)));
 
 %% 3) full non-linear simulation
 %%% simulate
 % sim parameters
-n_orbits = 15;
+n_orbits = 45;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
@@ -46,12 +60,14 @@ tspan = linspace(0, t_f, n_iter) ; % [0, t_f];
 
 x_c_0 = [r_c_0_ECI; v_c_0_ECI];
 x_d_0 = [r_d_0_ECI; v_d_0_ECI];
+x_c_osc_0 = [r_c_osc_0_ECI; v_c_osc_0_ECI];
+x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 [~, x_c_ECI] = ode113(@func, tspan, x_c_0, options);
 [~, x_d_ECI] = ode113(@func, tspan, x_d_0, options);
-[~, x_c_j2_ECI] = ode113(@func_J2, tspan, x_c_0, options);
-[t, x_d_j2_ECI] = ode113(@func_J2, tspan, x_d_0, options);
+[~, x_c_j2_ECI] = ode113(@func_J2, tspan, x_c_osc_0, options);
+[t, x_d_j2_ECI] = ode113(@func_J2, tspan, x_d_osc_0, options);
 
 x_c_ECI = x_c_ECI';
 x_d_ECI = x_d_ECI';
@@ -253,7 +269,7 @@ sgtitle("Relative Motion, with J2");
 
 %% 6+7)
 % new deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
-roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
+roe_d = [0; 0.100; 0.050; 0.100; 0.000; 0.200] / a_c ; % [m]
 
 oe_d = ROE2OE(oe_c, roe_d);
 a_d = oe_d(1);
@@ -262,11 +278,15 @@ i_d = oe_d(3);
 RAAN_d = oe_d(4);
 omega_d = oe_d(5);
 nu_d = oe_d(6);
+M_d = TrueToMeanAnomaly(nu_d, e_d);
 
-[r_d_0_new_ECI, v_d_0_new_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
-x_d_0_new = [r_d_0_new_ECI; v_d_0_new_ECI];
+oe_d_osc_j2 = mean2osc([a_d*1000; e_d; i_d; RAAN_d; omega_d; M_d], 1);
 
-[~, x_d_j2_new_ECI] = ode113(@func_J2, tspan, x_d_0_new, options);
+[r_d_osc_0_ECI_new, v_d_osc_0_ECI_new] = OE2ECI(oe_d_osc_j2(1)/1000, oe_d_osc_j2(2), oe_d_osc_j2(3), ...
+    oe_d_osc_j2(4), oe_d_osc_j2(5), MeanToTrueAnomaly(oe_d_osc_j2(6), oe_d_osc_j2(2)));
+x_d_osc_0_new = [r_d_osc_0_ECI_new; v_d_osc_0_ECI_new];
+
+[~, x_d_j2_new_ECI] = ode113(@func_J2, tspan, x_d_osc_0_new, options);
 x_d_j2_new_ECI = x_d_j2_new_ECI';
 
 r_d_j2_ECI_new = x_d_j2_new_ECI(1:3,:);

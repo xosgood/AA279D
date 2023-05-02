@@ -37,7 +37,7 @@ nu_d = oe_d(6);
 %%% simulate
 % sim parameters
 n_orbits = 15;
-n_steps_per_orbit = 30;
+n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 mu = 3.986e5; % (km^3 / s^2)
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -180,23 +180,27 @@ ylabels = ["a [km]", "u [rad]", "e_x", "e_y", "i [rad]", "RAAN [rad]"];
 figure(3);
 PlotOEvsTime(tspan, QNS_oe_c_series, ylabels);
 PlotOEvsTime(tspan, QNS_oe_c_mean_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Chief quasi non-singular mean and osculating orbital elements vs time, without J2");
 figure(4);
 PlotOEvsTime(tspan, QNS_oe_d_series, ylabels);
 PlotOEvsTime(tspan, QNS_oe_d_mean_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Deputy quasi non-singular mean and osculating orbital elements vs time, without J2");
 
 figure(5);
 PlotOEvsTime(tspan, QNS_oe_c_j2_series, ylabels);
 PlotOEvsTime(tspan, QNS_oe_c_mean_j2_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Chief quasi non-singular mean and osculating orbital elements vs time, with J2");
 figure(6);
 PlotOEvsTime(tspan, QNS_oe_d_j2_series, ylabels);
 PlotOEvsTime(tspan, QNS_oe_d_mean_j2_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Deputy quasi non-singular mean and osculating orbital elements vs time, with J2");
 
 % plotting qns roe
@@ -204,13 +208,15 @@ ylabels = ["a \delta a [m]", "a \delta \lambda [m]", "a \delta e_x [m]", "a \del
 figure(7);
 PlotOEvsTime(tspan, 1000 * oe_c_series(1,:) .* QNS_roe_series, ylabels);
 PlotOEvsTime(tspan, 1000 * oe_c_mean_series(1,:) .* QNS_roe_mean_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative quasi non-singular mean and osculating relative orbital elements vs time, without J2");
 
 figure(8);
 PlotOEvsTime(tspan, 1000 * oe_c_j2_series(1,:) .* QNS_roe_j2_series, ylabels);
 PlotOEvsTime(tspan, 1000 * oe_c_mean_j2_series(1,:) .* QNS_roe_mean_j2_series, ylabels);
-legend("Osculating", "Mean");
+subplot(6,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative quasi non-singular mean and osculating relative orbital elements vs time, with J2");
 
 %% 4) RTN plots
@@ -232,15 +238,32 @@ sgtitle("Planar Relative position in RTN, with J2");
 figure(13);
 PlotQNSROE_meters(QNS_roe_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
+subplot(3,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative Motion, without J2");
 
 figure(14);
 PlotQNSROE_meters(QNS_roe_j2_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_j2_series, a_c*1000);
+subplot(3,1,1);
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative Motion, with J2");
 
-
 %% 6) 
+
+%% 7)
+% new deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
+roe_d = [0; 0.100; 0.050; 0.100; 0.000; 0.200] / a_c ; % [m]
+
+oe_d = ROE2OE(oe_c, roe_d);
+a_d = oe_d(1);
+e_d = oe_d(2);
+i_d = oe_d(3);
+RAAN_d = oe_d(4);
+omega_d = oe_d(5);
+nu_d = oe_d(6);
+
+[r_d_0_ECI, v_d_0_ECI] = OE2ECI(a_d, e_d, i_d, RAAN_d, omega_d, nu_d);
 
 
 %% ODE Functions

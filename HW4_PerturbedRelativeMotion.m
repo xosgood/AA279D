@@ -27,9 +27,9 @@ oe_c_osc_j2 = mean2osc(oe_c_mean, 1);
 
 %% 2) initial deputy roe
 % deputy mean ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
-roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
+roe_d_2 = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
 
-oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
+oe_d = ROE2OE(oe_c, roe_d_2); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
 i_d = oe_d(3);
@@ -272,9 +272,9 @@ sgtitle("Relative Motion, with J2");
 
 %% 6+7)
 % new deputy ROE (quasi non-singular) [da, dlambda, dex, dey, dix, diy]^T
-roe_d = [0; 0.100; 0.050; 0.100; 0.000; 0.200] / a_c ; % [m]
+roe_d_6 = [0; 0.100; 0.050; 0.100; 0.000; 0.200] / a_c ; % [m]
 
-oe_d = ROE2OE(oe_c, roe_d);
+oe_d = ROE2OE(oe_c, roe_d_6);
 a_d = oe_d(1);
 e_d = oe_d(2);
 i_d = oe_d(3);
@@ -304,19 +304,30 @@ figure(16);
 sgtitle("Planar Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
 
 %% 8) Now consider the linearized analytical solution for the secular evolution of the relative orbital elements.
-QNS_oe_d_mean_series_STM_j2 = zeros(6, n_iter);
-QNS_oe_d_mean_series_STM_j2(:, 1) = QNS_roe_j2_series(:, iter);
+QNS_roe_d_series_STM_j2 = zeros(6, n_iter);
+QNS_roe_d_series_STM_j2_6 = zeros(6, n_iter);
+
+% Set intial roe with the intial roe's from part 2 and 6. 
+QNS_roe_d_series_STM_j2(:, 1) = roe_d_2;
+QNS_roe_d_series_STM_j2_6(:, 1) = roe_d_6;
+
+% time step.
 dt = tspan(2) - tspan(1);
+
 for iter = 2:n_iter
-    QNS_oe_d_mean_series_STM_j2(:, iter) = STM_QNS_ROE_J2(QNS_oe_c_j2_series(:,iter), QNS_oe_d_mean_series_STM_j2(:,iter-1), dt);
+    % From initial conditions in 2.
+    QNS_roe_d_series_STM_j2(:, iter) = STM_QNS_ROE_J2( oe_c_j2_series(:,iter-1), QNS_roe_d_series_STM_j2(:,iter-1), dt);
+
+    % From initial conditions in 6.
+    QNS_roe_d_series_STM_j2_6(:, iter) = STM_QNS_ROE_J2( oe_c_j2_series(:,iter-1), QNS_roe_d_series_STM_j2_6(:,iter-1), dt);
 end
 
 figure(17);
-PlotQNSROE_meters(QNS_oe_d_mean_series_STM_j2, a_c*1000);
+PlotQNSROE_meters(QNS_roe_d_series_STM_j2, a_c*1000);
+PlotQNSROE_meters(QNS_roe_d_series_STM_j2_6, a_c*1000);
 subplot(3,1,1);
-legend("Osculating","Location", "best");
+legend("initial conditions (2)", "initial conditions (6)" ,"Location", "best");
 sgtitle("Relative Motion, with J2");
-
 
 
 %% ODE Functions

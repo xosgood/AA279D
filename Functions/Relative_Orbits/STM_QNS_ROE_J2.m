@@ -1,4 +1,9 @@
 function roe_t = STM_QNS_ROE_J2(oe_c, roe_qns, tau)
+
+    % For arguments takes:
+    %   oe_c - kepler orbital elements of chief.
+    %   roe_qns - relative orbital elements of deputy relative to chief.
+    
     mu = 3.986e5; % (km^3 / s^2) for earth
     R_E = 6378.1; % equatorial radius of earth in km
     J2 = 0.108263e-2; % for earth

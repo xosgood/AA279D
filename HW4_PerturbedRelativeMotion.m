@@ -305,14 +305,21 @@ sgtitle("Planar Relative position in RTN, with J2, with initial conditions for n
 
 for iter = 1:size(r_c_ECI,2)
     oe_d_series_6(:, iter) = ECI2OE(r_d_j2_ECI_new(:, iter), v_d_j2_ECI_new(:, iter))';
-    QNS_roe_series_6(:, iter) = OE2ROE(oe_c_j2_series(:, iter), oe_d_series_6(:, iter));
+    oe_d_series_6_mean(:, iter) = osc2mean([oe_d_series_6(1, iter)*1000, oe_d_series_6(2, iter), ...
+        oe_d_series_6(3, iter), oe_d_series_6(4, iter), oe_d_series_6(5, iter), ...
+        TrueToMeanAnomaly(oe_d_series_6(6, iter), oe_d_series_6(2, iter))], 1);
+    oe_d_series_6_mean(1, iter) = oe_d_series_6_mean(1, iter) / 1000;
+    oe_d_series_6_mean(6, iter) = MeanToTrueAnomaly(oe_d_series_6_mean(6, iter), oe_d_series_6_mean(2, iter));
+    QNS_roe_series_6(:, iter) = OE2ROE(oe_c_j2_series(:, iter), oe_d_series_6(:, iter));  
+    QNS_roe_series_6_mean(:, iter) = OE2ROE(oe_c_mean_j2_series(:, iter), oe_d_series_6_mean(:, iter));
 end
 
 % plotting qns oe with J2
 figure(18);
 PlotQNSROE_meters(QNS_roe_series_6, a_c*1000);
+PlotQNSROE_meters(QNS_roe_series_6_mean, a_c*1000);
 subplot(3,1,1);
-legend("Osculating", "Location", "best");
+legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative Motion, with J2, with initial conditions for no secular J2 effect.");
 
 %% 8) Now consider the linearized analytical solution for the secular evolution of the relative orbital elements.

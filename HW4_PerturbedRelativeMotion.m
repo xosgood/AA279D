@@ -303,6 +303,18 @@ sgtitle("3D Relative position in RTN, with J2, with initial conditions for no se
 figure(16);
 sgtitle("Planar Relative position in RTN, with J2, with initial conditions for no secular J2 effects");
 
+for iter = 1:size(r_c_ECI,2)
+    oe_d_series_6(:, iter) = ECI2OE(r_d_j2_ECI_new(:, iter), v_d_j2_ECI_new(:, iter))';
+    QNS_roe_series_6(:, iter) = OE2ROE(oe_c_j2_series(:, iter), oe_d_series_6(:, iter));
+end
+
+% plotting qns oe with J2
+figure(18);
+PlotQNSROE_meters(QNS_roe_series_6, a_c*1000);
+subplot(3,1,1);
+legend("Osculating", "Location", "best");
+sgtitle("Relative Motion, with J2, with initial conditions for no secular J2 effect.");
+
 %% 8) Now consider the linearized analytical solution for the secular evolution of the relative orbital elements.
 QNS_roe_d_series_STM_j2 = zeros(6, n_iter);
 QNS_roe_d_series_STM_j2_6 = zeros(6, n_iter);

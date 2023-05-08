@@ -16,6 +16,8 @@
 
 function osc_elem = mean2osc(mean_elem,J2_flag)
 
+    mean_elem[1] = mean_elem[1] * 1000; 
+
     % Check inputs
     if (nargin < 2) || isempty(J2_flag)
         J2_flag = 1;
@@ -46,4 +48,6 @@ function osc_elem = mean2osc(mean_elem,J2_flag)
     else
         osc_elem = mean_elem;
     end
+
+    osc_elem(1) = osc_elem(1)/1000;
 end

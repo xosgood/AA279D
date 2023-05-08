@@ -18,8 +18,8 @@
 
 function mean_elem = osc2mean(osc_elem,J2_flag)
 
-    osc_elem(1) = osc_elem(1)/1000;
-    osc_elem(6) = MeanToTrueAnomaly(osc_elem(6), osc_elem(2));
+    osc_elem(1) = osc_elem(1) * 1000; % convert km to m
+    osc_elem(6) = TrueToMeanAnomaly(osc_elem(6), osc_elem(2));
 
     % Check inputs
     if (nargin < 2) || isempty(J2_flag)
@@ -51,6 +51,6 @@ function mean_elem = osc2mean(osc_elem,J2_flag)
         
     end
 
-    mean_elem(1) = mean_elem(1) * 1000; 
-    mean_elem(6) = TrueToMeanAnomaly(mean_elem(6), mean_elem(2));
+    mean_elem(1) = mean_elem(1) / 1000; % convert m to km
+    mean_elem(6) = MeanToTrueAnomaly(mean_elem(6), mean_elem(2));
 end

@@ -1,8 +1,17 @@
-function [r_ECI, v_ECI] = OE2ECI(a, e, i, RAAN, omega, nu)
+function [r_ECI, v_ECI] = OE2ECI(oe)
     % OE2ECI takes in 6 Keplerian orbital elements and returns the
     % postition vector and velocity vector in ECI coordinate frame.
     % It assumes the central body is the Earth.
-    % 'a' must be provided in km. Angles must be provided in radians. 
+    % 'a' must be provided in km.
+    % Angles must be provided in radians. 
+    % oe = [a, e, i, RAAN, omega, nu]^T.
+    a = oe(1);
+    e = oe(2);
+    i = oe(3);
+    RAAN = oe(4);
+    omega = oe(5);
+    nu = oe(6);
+    
     mu = 3.986e5; % (km^3 / s^2)
     E = TrueToEccentricAnomaly(nu, e);
     n = sqrt(mu / a^3);

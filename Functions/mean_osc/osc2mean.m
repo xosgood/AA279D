@@ -18,6 +18,9 @@
 
 function mean_elem = osc2mean(osc_elem,J2_flag)
 
+    osc_elem(1) = osc_elem(1)/1000;
+    osc_elem(6) = MeanToTrueAnomaly(osc_elem(6), osc_elem(2));
+
     % Check inputs
     if (nargin < 2) || isempty(J2_flag)
         J2_flag = 1;
@@ -45,4 +48,9 @@ function mean_elem = osc2mean(osc_elem,J2_flag)
     % Without J2, elements are equal
     else
         mean_elem = osc_elem;
+        
     end
+
+    mean_elem(1) = mean_elem(1) * 1000; 
+    mean_elem(6) = TrueToMeanAnomaly(mean_elem(6), mean_elem(2));
+end

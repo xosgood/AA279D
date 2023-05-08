@@ -16,7 +16,8 @@
 
 function osc_elem = mean2osc(mean_elem,J2_flag)
 
-    mean_elem[1] = mean_elem[1] * 1000; 
+    mean_elem(1) = mean_elem(1) * 1000; 
+    mean_elem(6) = TrueToMeanAnomaly(mean_elem(6), mean_elem(2));
 
     % Check inputs
     if (nargin < 2) || isempty(J2_flag)
@@ -50,4 +51,5 @@ function osc_elem = mean2osc(mean_elem,J2_flag)
     end
 
     osc_elem(1) = osc_elem(1)/1000;
+    osc_elem(6) = MeanToTrueAnomaly(osc_elem(6), osc_elem(2));
 end

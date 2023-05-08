@@ -42,7 +42,7 @@ tspan = linspace(0, t_f, n_iter);
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
 % Absolute non-linear sim of chief. 
-[~, x_c_ECI] = ode113(@func_J2, tspan, x_c_osc_0, options);
+[~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_c_osc_0, options);
 x_c_ECI = x_c_ECI';
 
 r_c_ECI = x_c_ECI(1:3,:);
@@ -82,6 +82,7 @@ dt = tspan(2) - tspan(1);
 % Set intial roe with the intial deputy roe. 
 QNS_roe_d_series_STM(:, 1) = roe_d;
 
+% propagate STM
 for iter = 1:n_iter
     oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
 
@@ -105,12 +106,10 @@ QNS_roe_mean_series = zeros(6, n_iter);
 oe_d_series = zeros(6, n_iter);
 oe_d_mean_series = zeros(6, n_iter);
 
-oe_d_osc = mean2osc([a_d; e_d; i_d; RAAN_d; omega_d; nu_d], 1);
-
 [r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
-[~, x_d_ECI] = ode113(@func_J2, tspan, x_d_osc_0, options);
+[~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_d_osc_0, options);
 x_d_ECI = x_d_ECI';
 
 r_d_ECI = x_d_ECI(1:3,:);
@@ -133,19 +132,3 @@ PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
 subplot(3,1,1);
 legend("Relative orbital elements of deputy" ,"Location", "best");
 sgtitle("Relative Motion, with J2, Non-linear");
-
-
-%% ODE Function
-% ECI absolute orbit ODE
-function statedot = func_J2(t, state)
-    % State vector is [rx ry rz vx vy vz]’.
-    % Although required by form, input value t will go unused here.
-    mu = 3.986e5; % (km^3 / s^2) for earth
-    R_E = 6378.1; % equatorial radius of earth in km
-    J2 = 0.108263e-2; % for earth
-    r = state(1:3);
-    rdot = state(4:6);
-    vdot = CentralBodyAccel(mu, r) + J2AccelECI(J2, mu, R_E, r(1), r(2), r(3));
-    statedot = [rdot;
-                vdot];
-end

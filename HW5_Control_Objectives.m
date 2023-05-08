@@ -28,11 +28,11 @@ M_c = TrueToMeanAnomaly(nu_c, e_c);
 oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
 oe_c_mean = [1000 * a_c; e_c; i_c; RAAN_c; omega_c; M_c]; % for mean2osc, needs it in meters, and Mean anomaly
-oe_c_osc_j2 = mean2osc(oe_c_mean, 1);
+oe_c_osc = mean2osc(oe_c_mean, 1);
 
 [r_c_0_ECI, v_c_0_ECI] = OE2ECI(a_c, e_c, i_c, RAAN_c, omega_c, nu_c);
-[r_c_osc_0_ECI, v_c_osc_0_ECI] = OE2ECI(oe_c_osc_j2(1)/1000, oe_c_osc_j2(2), oe_c_osc_j2(3), ...
-    oe_c_osc_j2(4), oe_c_osc_j2(5), MeanToTrueAnomaly(oe_c_osc_j2(6), oe_c_osc_j2(2)));
+[r_c_osc_0_ECI, v_c_osc_0_ECI] = OE2ECI(oe_c_osc(1)/1000, oe_c_osc(2), oe_c_osc(3), ...
+    oe_c_osc(4), oe_c_osc(5), MeanToTrueAnomaly(oe_c_osc(6), oe_c_osc(2)));
 
 x_c_osc_0 = [r_c_osc_0_ECI; v_c_osc_0_ECI];
 
@@ -62,7 +62,7 @@ xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 %% 2) STM linear model for Quasi Nonsingular ROE with J2
 
 % deputy relative and absolute orbit elements
-roe_d = [0; 0.100; 0.050; 0.100; 0.030; 0.200] / a_c ; % [m]
+roe_d = [0; 0.100; 0.050; 0.100; 0.0; 0.200] / a_c ; % [m]
 oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
@@ -75,7 +75,7 @@ M_d = TrueToMeanAnomaly(nu_d, e_d);
 oe_d_mean = oe_d;
 oe_d_mean(1) = oe_d_mean(1) * 1000;
 oe_d_mean(6) = M_d;
-oe_d_osc_j2 = mean2osc(oe_d_mean, 1);
+oe_d_osc = mean2osc(oe_d_mean, 1);
 
 QNS_roe_d_series_STM = zeros(6, n_iter);
 oe_c_series = zeros(6, n_iter);
@@ -112,10 +112,10 @@ QNS_roe_mean_series = zeros(6, n_iter);
 oe_d_series = zeros(6, n_iter);
 oe_d_mean_series = zeros(6, n_iter);
 
-oe_d_osc_j2 = mean2osc([a_d*1000; e_d; i_d; RAAN_d; omega_d; M_d], 1);
+oe_d_osc = mean2osc([a_d*1000; e_d; i_d; RAAN_d; omega_d; M_d], 1);
 
-[r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc_j2(1)/1000, oe_d_osc_j2(2), oe_d_osc_j2(3), ...
-    oe_d_osc_j2(4), oe_d_osc_j2(5), MeanToTrueAnomaly(oe_d_osc_j2(6), oe_d_osc_j2(2)));
+[r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc(1)/1000, oe_d_osc(2), oe_d_osc(3), ...
+    oe_d_osc(4), oe_d_osc(5), MeanToTrueAnomaly(oe_d_osc(6), oe_d_osc(2)));
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 [~, x_d_ECI] = ode113(@func_J2, tspan, x_d_osc_0, options);
@@ -124,9 +124,9 @@ x_d_ECI = x_d_ECI';
 r_d_ECI = x_d_ECI(1:3,:);
 v_d_ECI = x_d_ECI(4:6,:);
 
-[r_j2_RTN, v_j2_RTN] = ECI2RTN_Vectorized(r_c_ECI, v_c_ECI, r_d_ECI, v_d_ECI);
+[r_RTN, v_RTN] = ECI2RTN_Vectorized(r_c_ECI, v_c_ECI, r_d_ECI, v_d_ECI);
 
-PlotRTNSpace_meters(1000 * [r_j2_RTN; v_j2_RTN]');
+PlotRTNSpace_meters(1000 * [r_RTN; v_RTN]');
 
 for iter = 1:size(r_c_ECI,2)
     oe_d_series(:, iter) = ECI2OE(r_d_ECI(:, iter), v_d_ECI(:, iter))';

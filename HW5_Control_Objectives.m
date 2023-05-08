@@ -59,7 +59,7 @@ xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 %% 2) STM linear model for Quasi Nonsingular ROE with J2
 
 % deputy relative and absolute orbit elements
-roe_d = [0; 0.100; 0.050; 0.100; 0.0; 0.200] / a_c ; % [m]
+roe_d = [0; 0.100; 0.050; 0.100; 0.0; 0.200] / a_c; % [m]
 oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
@@ -135,19 +135,8 @@ legend("Relative orbital elements of deputy" ,"Location", "best");
 sgtitle("Relative Motion, with J2, Non-linear");
 
 
-%% ODE Functions
-function statedot = func(t, state)
-    % State vector is [rx ry rz vx vy vz]’.
-    % Although required by form, input value t will go unused here.
-    mu = 3.986e5; % (km^3 / s^2)
-    r = state(1:3);
-    rdot = state(4:6);
-    vdot = CentralBodyAccel(mu, r);
-    statedot = [rdot;
-                vdot];
-end
-
-% Dif. Eqs.
+%% ODE Function
+% ECI absolute orbit ODE
 function statedot = func_J2(t, state)
     % State vector is [rx ry rz vx vy vz]’.
     % Although required by form, input value t will go unused here.

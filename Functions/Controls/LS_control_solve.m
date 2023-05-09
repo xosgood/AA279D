@@ -1,9 +1,15 @@
 function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls, u_f)
+    % oe_c -- mean elements of the chief.
+    % roe_i -- intitial relative orbital elements.
+    % roe_f -- final relative orbital elements. 
+    % u_controls -- mean argument of lattitude to execute maneuver. 
+    % u_f -- final mean argument of lattitude. We might take this out. 
+
     mu = 3.986e5; % (km^3 / s^2) for earth
     R_E = 6378.1; % equatorial radius of earth in km
     J2 = 0.108263e-2; % for earth
 
-    N = size(nu_list, 1);
+    N = length(u_controls);
 
     M = zeros(6, 3*N);
     delta_roe = roe_f - roe_i;
@@ -12,23 +18,24 @@ function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls, u_f)
     e = oe_c(2);
     i = oe_c(3);
     
-    n = sqrt(a / u^3);
+    n = sqrt(a / mu^3);
     eta = sqrt(1 - e^2);
     kappa = 3 * J2 * R_E^2 * sqrt(mu) / (4 * a^3.5 * eta^4);
     P = 3*cos(i)^2;
     S = sin(2*i);
     Q = 5*cos(i)^2 -1; 
     E = 1 + eta;
+    F = 4 + 3*eta;
 
     omega_dot = kappa*Q;
 
 
     for iter = 1:N
-        A = np.zeros(6, 6);
-        B = np.zeros(6, 3);
+        A = zeros(6, 6);
+        B = zeros(6, 3);
 
         % assume that mean argument of latitude of maneuever. 
-        delta_u = u_f - nu_list(iter);
+        delta_u = u_f - u_controls(iter);
 
         tau = delta_u / (n + kappa*(eta * P + Q));
 
@@ -61,6 +68,9 @@ function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls, u_f)
 
     end
 
-    delta_v = M \ delta_roe;
+    disp(size(M));
+    disp(size(delta_roe));
+
+    delta_v = lsqr(M, delta_roe');
 
 end

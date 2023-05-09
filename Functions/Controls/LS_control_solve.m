@@ -51,7 +51,6 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
         A(5, 5) = 1;
         A(6, 1) = 3.5 * kappa * S * tau;
 
-        B = zeros(6, 3);
         B(1, 2) = 2;
         B(2, 1) = -2;
         B(3, 1) = sin(u_controls(iter));
@@ -71,5 +70,6 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
     disp(size(delta_roe));
 
     delta_v = lsqr(M, delta_roe');
-
+    
+    delta_v = reshape(delta_v, [3, length(delta_v)/3]);
 end

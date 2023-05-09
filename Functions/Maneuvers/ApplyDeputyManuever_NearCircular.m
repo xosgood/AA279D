@@ -1,4 +1,4 @@
-function roe_new = ApplyDeputyManuever(oe, roe, dv)
+function roe_new = ApplyDeputyManuever_NearCircular(oe, roe, dv)
     % Apply an impulsive delta-v manuever to deputy.
     % Arguments:
     %   oe: (6x1) orbital elements of chief [a, e, i, RAAN, omega, nu]^T.
@@ -16,7 +16,7 @@ function roe_new = ApplyDeputyManuever(oe, roe, dv)
     RAAN = oe(4);
     omega = oe(5);
     nu = oe(6);
-    [ex, ey] = DecomposeEccentricity(e, w);
+    [ex, ey] = DecomposeEccentricity(e, omega);
     eta = sqrt(1 - e^2);
     theta = omega + nu;
     n = sqrt(mu / a^3);

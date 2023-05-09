@@ -68,20 +68,17 @@ legend("Earth", "Chief","Location", "best");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
 
-%% Least squares control solution. 
+%% 3) Least squares control solution. 
 u_burns = [0, 1, 2, 3];
 roe_i = [0, 100, 0, 0, 0, 0];
 roe_f = [0, 100, 0, 30, 0, 30];
 
-delta_vs = LS_control_solve(oe_c, roe_i, roe_f, u_burns);
+delta_vs = LS_control_solve(oe_c, roe_f - roe_i, u_burns);
 
-%% 2) STM linear model for Quasi Nonsingular ROE with J2
+%% 4) STM linear model for Quasi Nonsingular ROE with J2
 QNS_roe_d_series_STM = zeros(6, n_iter);
 oe_c_series = zeros(6, n_iter);
 oe_c_mean_series = zeros(6, n_iter);
-
-% time step.
-dt = tspan(2) - tspan(1);
 
 % Set intial roe with the intial deputy roe. 
 QNS_roe_d_series_STM(:, 1) = roe_d;
@@ -89,12 +86,12 @@ QNS_roe_d_series_STM(:, 1) = roe_d;
 % propagate STM
 for iter = 1:n_iter
     oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
-
     oe_c_mean_series(:, iter) = osc2mean(oe_c_series(:, iter), 1);
 
     if iter < n_iter
-        QNS_roe_d_series_STM(:, iter+1) = STM_QNS_ROE_J2(oe_c_series(:,iter), QNS_roe_d_series_STM(:,iter), dt);
+        QNS_roe_d_series_STM(:, iter+1) = STM_QNS_ROE_J2(oe_c, QNS_roe_d_series_STM(:,iter), tspan(iter));
     end
+    
     
     % Apply Reconfiguration Manuever
     % if current time is a pre-defined manuever time

@@ -1,4 +1,4 @@
-function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls)
+function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
     % oe_c -- mean elements of the chief.
     % roe_i -- intitial relative orbital elements.
     % roe_f -- final relative orbital elements. 
@@ -12,7 +12,6 @@ function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls)
     N = length(u_controls);
 
     M = zeros(6, 3*N);
-    delta_roe = roe_f - roe_i;
 
     a = oe_c(1);
     e = oe_c(2);

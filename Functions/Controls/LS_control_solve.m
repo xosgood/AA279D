@@ -1,4 +1,4 @@
-function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls, u_f)
+function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls)
     % oe_c -- mean elements of the chief.
     % roe_i -- intitial relative orbital elements.
     % roe_f -- final relative orbital elements. 
@@ -35,7 +35,7 @@ function delta_v = LS_control_solve(oe_c, roe_i, roe_f, u_controls, u_f)
         B = zeros(6, 3);
 
         % assume that mean argument of latitude of maneuever. 
-        delta_u = u_f - u_controls(iter);
+        delta_u = u_controls(iter) - u_controls(1);
 
         tau = delta_u / (n + kappa*(eta * P + Q));
 

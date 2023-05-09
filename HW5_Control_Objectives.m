@@ -140,12 +140,9 @@ figure(5);
 PlotQNSROE_meters(QNS_roe_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
 subplot(3,1,1);
-<<<<<<< Updated upstream
 legend("Osculating", "Mean", "Location", "best");
 sgtitle("Relative orbital elements of deputy, with J2, Non-linear");
-=======
-legend("Relative orbital elements of deputy" ,"Location", "best");
-sgtitle("Relative Motion, with J2, Non-linear");
+
 
 %% Least squares control solution. 
 u_burns = [0, 1, 2, 3];
@@ -153,5 +150,4 @@ u_f = 4;
 roe_i = [0, 100, 0, 0, 0, 0];
 roe_f = [0, 100, 0, 30, 0, 30];
 
-delta_vs = LS_control_solve(oe_c_mean_series, roe_i, roe_f, u_burns, u_f);
->>>>>>> Stashed changes
+delta_vs = LS_control_solve(oe_c_mean_series, roe_i, roe_f, u_burns);

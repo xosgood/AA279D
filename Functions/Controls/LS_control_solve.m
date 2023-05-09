@@ -17,10 +17,10 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
     e = oe_c(2);
     i = oe_c(3);
     
-    n = sqrt(a / mu^3);
+    n = sqrt(mu / a^3);
     eta = sqrt(1 - e^2);
     kappa = 3 * J2 * R_E^2 * sqrt(mu) / (4 * a^3.5 * eta^4);
-    P = 3*cos(i)^2;
+    P = 3*cos(i)^2 - 1;
     S = sin(2*i);
     Q = 5*cos(i)^2 -1; 
     E = 1 + eta;

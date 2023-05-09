@@ -18,15 +18,21 @@ function roe_new = ApplyDeputyManuever_NearCircular(oe, roe, dv)
     nu = oe(6);
     [ex, ey] = DecomposeEccentricity(e, omega);
     eta = sqrt(1 - e^2);
-    theta = omega + nu;
+    u = omega + nu;
     n = sqrt(mu / a^3);
     
-    Gamma = [2 / eta * e * sin(nu), 2 / eta * (1 + e*cos(nu)), 0;
-             -2 * eta^2 / (1 + e * cos(nu)), 0, 0;
-             eta*sin(theta), eta*((2 + e*cos(nu))*cos(theta) + ex) / (1+e*cos(nu)), eta*ey*sin(theta) / (tan(i)*(1+e*cos(nu)));
-             -eta*cos(theta), eta*((2 + e*cos(nu))*sin(theta) + ey) / (1+e*cos(nu)), -eta*ex*sin(theta) / (tan(i)*(1+e*cos(nu)));
-             0, 0, eta * cos(theta) / (1 + e * cos(nu));
-             0, 0, eta * sin(theta) / (1 + e * cos(nu))] / (n * a);
+%     Gamma = [2 / eta * e * sin(nu), 2 / eta * (1 + e*cos(nu)), 0;
+%              -2 * eta^2 / (1 + e * cos(nu)), 0, 0;
+%              eta*sin(theta), eta*((2 + e*cos(nu))*cos(theta) + ex) / (1+e*cos(nu)), eta*ey*sin(theta) / (tan(i)*(1+e*cos(nu)));
+%              -eta*cos(theta), eta*((2 + e*cos(nu))*sin(theta) + ey) / (1+e*cos(nu)), -eta*ex*sin(theta) / (tan(i)*(1+e*cos(nu)));
+%              0, 0, eta * cos(theta) / (1 + e * cos(nu));
+%              0, 0, eta * sin(theta) / (1 + e * cos(nu))] / (n * a * 1000);
+    Gamma = [0, 2, 0;
+             -2, 0, 0;
+             sin(u), 2*cos(u), 0;
+             -cos(u), 2*sin(u), 0;
+             0, 0, cos(u);
+             0, 0, sin(u)] / (n * a * 1000);
     
     delta_roe = Gamma * dv;
     

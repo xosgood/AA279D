@@ -105,7 +105,7 @@ for iter = 1:n_iter
         % Apply Reconfiguration Manuever
         % compute mean change in mean argument of latitidue for deputy 
         u_d_cur = oe_d_mean_series(5,iter+1) + oe_d_mean_series(6,iter+1);
-        delta_u_d = u_d_cur
+        delta_u_d = u_d_cur;
         if (reconfig_counter <= num_reconfig_burns) && (abs(wrapTo2Pi(delta_u_d) - u_burns(reconfig_counter)) < 1e-2)
             QNS_roe_d_series_STM(:,iter+1) = ApplyDeputyManuever_NearCircular(...
                 oe_c_mean_series(:,iter), QNS_roe_d_series_STM(:,iter+1), delta_vs(:,reconfig_counter));

@@ -56,8 +56,7 @@ title("Absolute ECI Orbits, with J2");
 legend("Earth", "Chief","Location", "best");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
-%% 2) STM linear model for Quasi Nonsingular ROE with J2
-
+%% deputy initial conditions
 % deputy relative and absolute orbit elements
 roe_d = [0; 0.100; 0; 0.030; 0; 0.030] / a_c; % [m]
 oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
@@ -69,6 +68,14 @@ omega_d = oe_d(5);
 nu_d = oe_d(6);
 M_d = TrueToMeanAnomaly(nu_d, e_d);
 
+%% Least squares control solution. 
+u_burns = [0, 1, 2, 3];
+roe_i = [0, 100, 0, 0, 0, 0];
+roe_f = [0, 100, 0, 30, 0, 30];
+
+delta_vs = LS_control_solve(oe_c, roe_i, roe_f, u_burns);
+
+%% 2) STM linear model for Quasi Nonsingular ROE with J2
 oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
 
@@ -109,45 +116,3 @@ PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
-
-%% 3) Non linear relative orbit propagator of deputy.
-QNS_roe_series = zeros(6, n_iter);
-QNS_roe_mean_series = zeros(6, n_iter);
-oe_d_series = zeros(6, n_iter);
-oe_d_mean_series = zeros(6, n_iter);
-
-[r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc);
-x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
-
-[~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_d_osc_0, options);
-x_d_ECI = x_d_ECI';
-
-r_d_ECI = x_d_ECI(1:3,:);
-v_d_ECI = x_d_ECI(4:6,:);
-
-[r_RTN, v_RTN] = ECI2RTN_Vectorized(r_c_ECI, v_c_ECI, r_d_ECI, v_d_ECI);
-
-PlotRTNSpace_meters(1000 * [r_RTN; v_RTN]');
-
-for iter = 1:size(r_c_ECI,2)
-    oe_d_series(:, iter) = ECI2OE(r_d_ECI(:, iter), v_d_ECI(:, iter))';
-    oe_d_mean_series(:, iter) = osc2mean(oe_d_series(:, iter), 1);
-    QNS_roe_series(:, iter) = OE2ROE(oe_c_series(:, iter), oe_d_series(:, iter));  
-    QNS_roe_mean_series(:, iter) = OE2ROE(oe_c_mean_series(:, iter), oe_d_mean_series(:, iter));
-end
-
-figure(5);
-PlotQNSROE_meters(QNS_roe_series, a_c*1000);
-PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
-subplot(3,1,1);
-legend("Osculating", "Mean", "Location", "best");
-sgtitle("Relative orbital elements of deputy, with J2, Non-linear");
-
-
-%% Least squares control solution. 
-u_burns = [0, 1, 2, 3];
-u_f = 4;
-roe_i = [0, 100, 0, 0, 0, 0];
-roe_f = [0, 100, 0, 30, 0, 30];
-
-delta_vs = LS_control_solve(oe_c_mean_series, roe_i, roe_f, u_burns);

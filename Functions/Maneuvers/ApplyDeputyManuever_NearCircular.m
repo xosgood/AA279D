@@ -32,7 +32,7 @@ function roe_new = ApplyDeputyManuever_NearCircular(oe, roe, dv)
              sin(u), 2*cos(u), 0;
              -cos(u), 2*sin(u), 0;
              0, 0, cos(u);
-             0, 0, sin(u)] / (n * a * 1000);
+             0, 0, sin(u)] / (n * a);
     
     delta_roe = Gamma * dv;
     

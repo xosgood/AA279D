@@ -42,7 +42,7 @@ oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
 
 % simulation parameters.
-n_orbits = 2;
+n_orbits = 45;
 n_steps_per_orbit = 300;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -104,9 +104,8 @@ for iter = 1:n_iter
     
         % Apply Reconfiguration Manuever
         % compute mean change in mean argument of latitidue for deputy 
-        u_d_cur = oe_d_mean_series(5,iter+1) + oe_d_mean_series(6,iter+1);
-        delta_u_d = u_d_cur;
-        if (reconfig_counter <= num_reconfig_burns) && (abs(wrapTo2Pi(delta_u_d) - u_burns(reconfig_counter)) < 1e-2)
+        u_c_cur = oe_c_mean_series(5,iter) + oe_c_mean_series(6,iter);
+        if (reconfig_counter <= num_reconfig_burns) && (abs(wrapToPi(u_c_cur) - wrapToPi(u_burns(reconfig_counter))) < 1e-2)
             QNS_roe_d_series_STM(:,iter+1) = ApplyDeputyManuever_NearCircular(...
                 oe_c_mean_series(:,iter), QNS_roe_d_series_STM(:,iter+1), delta_vs(:,reconfig_counter));
             reconfig_counter = reconfig_counter + 1;

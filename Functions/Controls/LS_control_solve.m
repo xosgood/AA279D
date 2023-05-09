@@ -25,6 +25,7 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
     Q = 5*cos(i)^2 -1; 
     E = 1 + eta;
     F = 4 + 3*eta;
+    T = sin(i)^2;
 
     omega_dot = kappa*Q;
 
@@ -44,12 +45,12 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
         A(2, 5) = - kappa * F * S * tau;
         A(3, 3) = cos(omega_dot * tau);
         A(3, 4) = -sin(omega_dot * tau);
-        A(3, 5) = 0;
-        A(3, 6) = 0;
         A(4, 3) = sin(omega_dot * tau);
         A(4, 4) = cos(omega_dot * tau);
         A(5, 5) = 1;
         A(6, 1) = 3.5 * kappa * S * tau;
+        A(6, 5) = 2 * kappa * T * tau;
+        A(6, 6) = 1;
 
         B(1, 2) = 2;
         B(2, 1) = -2;

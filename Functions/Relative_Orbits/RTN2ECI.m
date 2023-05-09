@@ -1,6 +1,6 @@
-function [x1_ECI] = ECI2RTN(x0_ECI, x1_RTN)
+function [x1_ECI] = RTN2ECI(x0_ECI, x1_RTN)
     % Arugments:
-    %   - x0_ECI: intertial state in the ECI frame of cheif.
+    %   - x0_ECI: inertial state in the ECI frame of chief.
     %   - x1_RTN: relative RTN position of deputy to chief.
     % Returns
     %   - x1_ECI: inertial state of deputy in ECI frame. 

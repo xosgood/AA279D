@@ -33,8 +33,8 @@ oe_c_osc = mean2osc(oe_c, 1);
 x_c_osc_0 = [r_c_osc_0_ECI; v_c_osc_0_ECI];
 
 % simulation parameters
-n_orbits = 15;
-n_steps_per_orbit = 100;
+n_orbits = 200;
+n_steps_per_orbit = 60;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
@@ -59,7 +59,7 @@ xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 %% 2) STM linear model for Quasi Nonsingular ROE with J2
 
 % deputy relative and absolute orbit elements
-roe_d = [0; 0.100; 0.050; 0.100; 0.0; 0.200] / a_c; % [m]
+roe_d = [0; 0.100; 0; 0.030; 0; 0.030] / a_c; % [m]
 oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
@@ -91,13 +91,23 @@ for iter = 1:n_iter
     if iter < n_iter
         QNS_roe_d_series_STM(:, iter+1) = STM_QNS_ROE_J2(oe_c_series(:,iter), QNS_roe_d_series_STM(:,iter), dt);
     end
+    
+    % Apply Reconfiguration Manuever
+    % if current time is a pre-defined manuever time
+    %   ApplyDeputyManuever(oe_c_mean_series(:,iter), QNS_roe_d_series(:,iter+1), dv
+    
+    % Apply Formation Keeping Control
+    % if dex has gone out of acceptable band (for our case it will go too
+    % positive)
+    %   then calculate manuever to push dex to other side of
+    %   acceptable band (some pre-defined negative dex)
+    %   apply such maneuver following same logic as reconfig manuever above
 end
 
 figure(2);
 PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
-legend("Relative orbital elements of deputy" ,"Location", "best");
-sgtitle("Relative Motion, with J2, STM");
+sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
 
 %% 3) Non linear relative orbit propagator of deputy.
@@ -130,5 +140,5 @@ figure(5);
 PlotQNSROE_meters(QNS_roe_series, a_c*1000);
 PlotQNSROE_meters(QNS_roe_mean_series, a_c*1000);
 subplot(3,1,1);
-legend("Relative orbital elements of deputy" ,"Location", "best");
-sgtitle("Relative Motion, with J2, Non-linear");
+legend("Osculating", "Mean", "Location", "best");
+sgtitle("Relative orbital elements of deputy, with J2, Non-linear");

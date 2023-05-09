@@ -5,17 +5,14 @@
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
-% Implement and verify the models for your mission in open loop.
 % Models:
 %   1. Absolute non-linear, non-circular absolute model for chief. 
 %   2. Relative linear (first order), circular ROE STM with J2. 
-%   3. Relative non-linear ROE with dif. eqs.
-%
-% constants
+
+
+%% 1) Initilize orbital elements, constants, and simulation parameters.
 mu = 3.986e5;
 
-
-%% 1) Absolute orbit propagator.
 % chief mean OE
 a_c = 7000; % km
 e_c = 0.001;
@@ -27,12 +24,24 @@ M_c = TrueToMeanAnomaly(nu_c, e_c);
 oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
 oe_c_osc = mean2osc(oe_c, 1);
-
 [r_c_osc_0_ECI, v_c_osc_0_ECI] = OE2ECI(oe_c_osc);
-
 x_c_osc_0 = [r_c_osc_0_ECI; v_c_osc_0_ECI];
 
-% simulation parameters
+% deputy orbit
+roe_d = [0; 0.100; 0; 0.030; 0; 0.030] / a_c; % [m]
+oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
+a_d = oe_d(1);
+e_d = oe_d(2);
+i_d = oe_d(3);
+RAAN_d = oe_d(4);
+omega_d = oe_d(5);
+nu_d = oe_d(6);
+M_d = TrueToMeanAnomaly(nu_d, e_d);
+
+oe_d_mean = oe_d;
+oe_d_osc = mean2osc(oe_d_mean, 1);
+
+% simulation parameters.
 n_orbits = 200;
 n_steps_per_orbit = 60;
 n_iter = n_steps_per_orbit * n_orbits;
@@ -41,6 +50,8 @@ t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter);
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
+
+%% 2) Absolute orbit propagator.
 % Absolute non-linear sim of chief. 
 [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_c_osc_0, options);
 x_c_ECI = x_c_ECI';
@@ -56,17 +67,6 @@ title("Absolute ECI Orbits, with J2");
 legend("Earth", "Chief","Location", "best");
 xlabel('I (km)'); ylabel('J (km)'); zlabel('K (km)');
 
-%% deputy initial conditions
-% deputy relative and absolute orbit elements
-roe_d = [0; 0.100; 0; 0.030; 0; 0.030] / a_c; % [m]
-oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
-a_d = oe_d(1);
-e_d = oe_d(2);
-i_d = oe_d(3);
-RAAN_d = oe_d(4);
-omega_d = oe_d(5);
-nu_d = oe_d(6);
-M_d = TrueToMeanAnomaly(nu_d, e_d);
 
 %% Least squares control solution. 
 u_burns = [0, 1, 2, 3];
@@ -76,9 +76,6 @@ roe_f = [0, 100, 0, 30, 0, 30];
 delta_vs = LS_control_solve(oe_c, roe_i, roe_f, u_burns);
 
 %% 2) STM linear model for Quasi Nonsingular ROE with J2
-oe_d_mean = oe_d;
-oe_d_osc = mean2osc(oe_d_mean, 1);
-
 QNS_roe_d_series_STM = zeros(6, n_iter);
 oe_c_series = zeros(6, n_iter);
 oe_c_mean_series = zeros(6, n_iter);

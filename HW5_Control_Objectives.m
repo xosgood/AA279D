@@ -97,6 +97,10 @@ delta_v_series = zeros(n_iter, 1);
 roes_desired = zeros(n_iter, 6);
 roes_desired(1:n_steps_per_orbit, :) = ones(n_steps_per_orbit, 1) * roe_i;
 roes_desired(n_steps_per_orbit:n_iter, :) = ones(n_iter-n_steps_per_orbit+1, 1) * roe_f;
+r_d_RTN = zeros(3, n_iter);
+v_d_RTN = zeros(3, n_iter);
+r_d_ECI = zeros(3, n_iter);
+v_d_ECI = zeros(3, n_iter);
 
 % initial mean argument of latitude of deputy
 u_d_initial = oe_d_mean_series(5,1) + oe_d_mean_series(6,1);
@@ -107,6 +111,9 @@ for iter = 1:n_iter
     oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
     oe_c_mean_series(:, iter) = osc2mean(oe_c_series(:, iter), 1);
     delta_v_series(iter) = cumulative_delta_v;
+
+    [r_d_ECI(:, iter), v_d_ECI(:, iter)] = OE2ECI(oe_d_mean_series(:,iter));
+    [r_d_RTN(:, iter), v_d_RTN(:, iter)] =  ECI2RTN(r_c_ECI(:, iter), v_c_ECI(:, iter), r_d_ECI(:, iter), v_d_ECI(:, iter));
 
     if iter < n_iter
         % this STM propagates mean roe's
@@ -159,21 +166,48 @@ PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
-
 figure(3);
 plot((1:n_iter)/n_steps_per_orbit, delta_v_series);
-sgtitle("Delta V vs radians of rotation");
-xlabel("radians of rotation");
+sgtitle("Delta V vs orbits");
+xlabel("orbits");
+ylabel("cumulative delta v")
 
 figure(4);
+hold on;
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,3));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(3,:));
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,4));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(4,:));
+hold off;
+xlabel("orbits");
+ylabel("ROEs");
+legend("\delta ex desired", "\delta ex actual", "\delta ey desired", "\delta ey actual")
+sgtitle("Desired vs. actual ROEs");
+
+figure(5);
 hold on;
 plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,5));
 plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(5,:));
 plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,6));
 plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(6,:));
 hold off;
-xlabel("radians of rotation");
+xlabel("orbits");
 ylabel("ROEs");
-legend("ex desired", "ex actual", "ey desired", "ey actual")
+legend("\delta ix desired", "\delta ix actual", "\delta iy desired", "\delta iy actual")
 sgtitle("Desired vs. actual ROEs");
+
+figure(6);
+hold on;
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,2));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(2,:));
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,2));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(2,:));
+hold off;
+xlabel("orbits");
+ylabel("ROEs");
+legend("\delta a desired", "\delta a actual", "\delta \lambda desired", "\delta \lambda actual")
+sgtitle("Desired vs. actual ROEs");
+
+% Plot RTN
+PlotRTNSpace([r_d_RTN; v_d_RTN]);
 

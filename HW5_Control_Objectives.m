@@ -92,6 +92,12 @@ oe_d_mean_series = zeros(6, n_iter);
 QNS_roe_d_series_STM(:, 1) = roe_d;
 oe_d_mean_series(:,1) = oe_d_mean;
 
+cumulative_delta_v = 0;
+delta_v_series = zeros(n_iter, 1);
+roes_desired = zeros(n_iter, 6);
+roes_desired(1:n_steps_per_orbit, :) = ones(n_steps_per_orbit, 1) * roe_i;
+roes_desired(n_steps_per_orbit:n_iter, :) = ones(n_iter-n_steps_per_orbit+1, 1) * roe_f;
+
 % initial mean argument of latitude of deputy
 u_d_initial = oe_d_mean_series(5,1) + oe_d_mean_series(6,1);
 
@@ -100,6 +106,7 @@ dt = tspan(2) - tspan(1);
 for iter = 1:n_iter
     oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
     oe_c_mean_series(:, iter) = osc2mean(oe_c_series(:, iter), 1);
+    delta_v_series(iter) = cumulative_delta_v;
 
     if iter < n_iter
         % this STM propagates mean roe's
@@ -112,6 +119,7 @@ for iter = 1:n_iter
         if (reconfig_counter <= num_reconfig_burns) && (abs(wrapToPi(u_c_cur) - wrapToPi(u_burns(reconfig_counter))) < 1e-2)
             QNS_roe_d_series_STM(:,iter+1) = ApplyDeputyManuever_NearCircular(...
                 oe_c_mean_series(:,iter), QNS_roe_d_series_STM(:,iter+1), delta_vs(:,reconfig_counter));
+            cumulative_delta_v = cumulative_delta_v + norm(delta_vs(:,reconfig_counter));
             reconfig_counter = reconfig_counter + 1;
         end
         
@@ -133,6 +141,7 @@ for iter = 1:n_iter
             && (abs(wrapToPi(u_c_cur) - wrapToPi(u_fk_burns(form_keep_counter))) < 1e-2)
             QNS_roe_d_series_STM(:,iter+1) = ApplyDeputyManuever_NearCircular(...
                 oe_c_mean_series(:,iter), QNS_roe_d_series_STM(:,iter+1), delta_vs_fk(:,form_keep_counter));
+            cumulative_delta_v = cumulative_delta_v + norm(delta_vs(:,form_keep_counter));
             form_keep_counter = form_keep_counter + 1;
             if form_keep_counter > length(u_fk_burns)
                 % then we have completed our formation keeping manuever
@@ -149,4 +158,22 @@ figure(2);
 PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
+
+
+figure(3);
+plot((1:n_iter)/n_steps_per_orbit, delta_v_series);
+sgtitle("Delta V vs radians of rotation");
+xlabel("radians of rotation");
+
+figure(4);
+hold on;
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,5));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(5,:));
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,6));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(6,:));
+hold off;
+xlabel("radians of rotation");
+ylabel("ROEs");
+legend("ex desired", "ex actual", "ey desired", "ey actual")
+sgtitle("Desired vs. actual ROEs");
 

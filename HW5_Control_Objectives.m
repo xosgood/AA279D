@@ -42,14 +42,13 @@ oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
 
 % simulation parameters.
-n_orbits = 45;
+n_orbits = 300;
 n_steps_per_orbit = 300;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter);
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
-
 
 %% 2) Absolute orbit propagator.
 % Absolute non-linear sim of chief. 
@@ -78,7 +77,12 @@ delta_vs = LS_control_solve(oe_c, roe_f - roe_i, u_burns);
 num_reconfig_burns = length(u_burns);
 reconfig_counter = 1;
 
-%% 4) STM linear model for Quasi Nonsingular ROE with J2
+%% 4) Formation keeping control parameters
+adex_max = 10; % km
+form_keep_man = false; % flag to keep track of if we have a formation keeping maneuver that we need to perform
+form_keep_counter = 1;
+
+%% 5) STM linear model for Quasi Nonsingular ROE with J2
 QNS_roe_d_series_STM = zeros(6, n_iter);
 oe_c_series = zeros(6, n_iter);
 oe_c_mean_series = zeros(6, n_iter);
@@ -111,12 +115,32 @@ for iter = 1:n_iter
             reconfig_counter = reconfig_counter + 1;
         end
         
-        % Apply Formation Keeping Control
-        % if dex has gone out of acceptable band (for our case it will go too
-        % positive)
-        %   then calculate manuever to push dex to other side of
-        %   acceptable band (some pre-defined negative dex)
-        %   apply such maneuver following same logic as reconfig manuever above
+        % Compute Formation Keeping Control
+        adex = a_c * QNS_roe_d_series_STM(3,iter+1);
+        if iter > n_steps_per_orbit ... % only perform formation keeping after we've gone through 1 orbit already (to account for reconfig maneuver)
+            && adex > adex_max ... % dex has gone beyond our dead-band threshold
+            && ~form_keep_man % we aren't already in the middle of a formation keeping manuever
+            % compute manuever for formation keeping
+            u_fk_burns = [wrapToPi(u_c_cur), wrapToPi(u_c_cur + pi)];
+            roe_i_fk = QNS_roe_d_series_STM(:,iter+1)';
+            roe_f_fk = roe_i_fk;
+            roe_f_fk(3) = -adex_max / a_c; % push dex to other side of dead band
+            delta_vs_fk = LS_control_solve(oe_c_mean_series(:, iter), roe_f_fk - roe_i_fk, u_fk_burns);
+            form_keep_man = true;
+        end
+        % Apply Formation Keeping Manuever
+        if form_keep_man ...
+            && (abs(wrapToPi(u_c_cur) - wrapToPi(u_fk_burns(form_keep_counter))) < 1e-2)
+            QNS_roe_d_series_STM(:,iter+1) = ApplyDeputyManuever_NearCircular(...
+                oe_c_mean_series(:,iter), QNS_roe_d_series_STM(:,iter+1), delta_vs_fk(:,form_keep_counter));
+            form_keep_counter = form_keep_counter + 1;
+            if form_keep_counter > length(u_fk_burns)
+                % then we have completed our formation keeping manuever
+                % so we should reset our counter and flag
+                form_keep_counter = 1;
+                form_keep_man = false;
+            end
+        end
         
     end
 end

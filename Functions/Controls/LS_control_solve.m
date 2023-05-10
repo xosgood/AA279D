@@ -67,10 +67,8 @@ function delta_v = LS_control_solve(oe_c, delta_roe, u_controls)
 
     end
 
-    disp(size(M));
-    disp(size(delta_roe));
-
     delta_v = lsqr(M, delta_roe');
+    %delta_v = pinv(M) * delta_roe';
     
     delta_v = reshape(delta_v, [3, length(delta_v)/3]);
 end

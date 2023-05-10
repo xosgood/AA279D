@@ -198,8 +198,8 @@ sgtitle("Desired vs. actual ROEs");
 
 figure(6);
 hold on;
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,2));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(2,:));
+plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,1));
+plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(1,:));
 plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,2));
 plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(2,:));
 hold off;

@@ -43,7 +43,7 @@ oe_d_osc = mean2osc(oe_d_mean, 1);
 
 % simulation parameters.
 n_orbits = 300;
-n_steps_per_orbit = 300;
+n_steps_per_orbit = 500;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
@@ -87,6 +87,7 @@ QNS_roe_d_series_STM = zeros(6, n_iter);
 oe_c_series = zeros(6, n_iter);
 oe_c_mean_series = zeros(6, n_iter);
 oe_d_mean_series = zeros(6, n_iter);
+oe_d_series = zeros(6, n_iter);
 
 % Set intial roe with the intial deputy roe. 
 QNS_roe_d_series_STM(:, 1) = roe_d;
@@ -111,8 +112,11 @@ for iter = 1:n_iter
     oe_c_series(:, iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
     oe_c_mean_series(:, iter) = osc2mean(oe_c_series(:, iter), 1);
     delta_v_series(iter) = cumulative_delta_v;
-
-    [r_d_ECI(:, iter), v_d_ECI(:, iter)] = OE2ECI(oe_d_mean_series(:,iter));
+    
+    % Create RTN vectors to visulize. 
+    %QNS_roe_d_series_STM(2, iter) = 100/7000;
+    oe_d(:, iter) = ROE2OE(oe_c_series(:,iter), QNS_roe_d_series_STM(:, iter));
+    [r_d_ECI(:, iter), v_d_ECI(:, iter)] = OE2ECI(oe_d(:,iter));
     [r_d_RTN(:, iter), v_d_RTN(:, iter)] =  ECI2RTN(r_c_ECI(:, iter), v_c_ECI(:, iter), r_d_ECI(:, iter), v_d_ECI(:, iter));
 
     if iter < n_iter
@@ -172,6 +176,7 @@ sgtitle("Delta V vs orbits");
 xlabel("orbits");
 ylabel("cumulative delta v")
 
+% plot ROE vs time. 
 figure(4);
 hold on;
 plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,3));
@@ -209,5 +214,6 @@ legend("\delta a desired", "\delta a actual", "\delta \lambda desired", "\delta 
 sgtitle("Desired vs. actual ROEs");
 
 % Plot RTN
-PlotRTNSpace([r_d_RTN; v_d_RTN]);
+x_RTN = [r_d_RTN', v_d_RTN'];
+PlotRTNSpace(x_RTN);
 

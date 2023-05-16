@@ -2,6 +2,12 @@ function B = B_Control_ReducedModel(oe_c)
     % Returns the reduced control input matrix given 
     % the orbital elements of the chief. 
 
+    % We will use the definition of B as defined in Steindorf, et al.
+    %   Lyapunov Artificial Potential paper ("CONSTRAINED LOW-THRUST SATELLITE FORMATION-FLYING USING RELATIVE ORBIT ELEMENTS".
+
+    % Arguments:
+    %   oe_c: (6x1) keplerian orbital elements of the chief [a, e, i, RAAN, omega, nu]^T
+
     mu = 3.986e5; % (km^3 / s^2) for earth
     
     a = oe_c(1);

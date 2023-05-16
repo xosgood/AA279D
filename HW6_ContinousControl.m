@@ -113,7 +113,7 @@ for iter = 2:n_iter
     roe_d_mean_reducedmodel = [roe_d_mean_series(1,iter); roe_d_mean_series(3:6,iter)];
     A = A_Control_ReducedModel(oe_c_mean_series(:,iter));
     B = B_Control_ReducedModel(oe_c_mean_series(:,iter));
-    P = P_Control_ReducedModel(oe_c_mean_series(:,iter), N, k);
+    P = P_Control_ReducedModel(oe_c_mean_series(:,iter), Delta_roe_reducedmodel, N, k);
     u = - pinv(B) * (A * roe_d_mean_reducedmodel + P * Delta_roe_reducedmodel);
     
     % check lower bound for control effort

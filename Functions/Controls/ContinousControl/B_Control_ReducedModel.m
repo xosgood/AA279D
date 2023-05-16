@@ -1,4 +1,4 @@
-function [outputArg1,outputArg2] = B_Control_ReducedModel(inputArg1,inputArg2)
+function B = B_Control_ReducedModel(oe_c)
     %B_CONTROL_REDUCEDMODEL Summary of this function goes here
     %   Detailed explanation goes here
     mu = 3.986e5; % (km^3 / s^2) for earth

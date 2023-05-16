@@ -77,7 +77,7 @@ roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
 
 
 %% Lyapunov controller setup
-N = 4; % exponent in P matrix
+N = 10; % exponent in P matrix
 k = 1; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
 u_upperbound = 1e-3; % upper bound on control actuation
@@ -98,9 +98,16 @@ oe_c_mean_series(:,1) = oe_c_mean;
 oe_d_osc_series(:,1) = oe_d_osc;
 oe_d_mean_series(:,1) = oe_d_mean;
 
+% delta v for plotting
 u_series = zeros(2, n_iter);
 cumulative_delta_v = 0;
 delta_v_cum_series = zeros(n_iter, 1);
+
+% rtn for plotting. 
+r_d_RTN = zeros(3, n_iter);
+v_d_RTN = zeros(3, n_iter);
+r_d_ECI_with_control = zeros(3, n_iter);
+v_d_ECI_with_control = zeros(3, n_iter);
 
 for iter = 2:n_iter
     % chief ECI from ground truth to OE
@@ -156,15 +163,26 @@ for iter = 2:n_iter
     dv_cur = norm(delta_v_RTN);
     cumulative_delta_v = cumulative_delta_v + dv_cur;
     delta_v_cum_series(iter) = cumulative_delta_v;
+
+    % RTN for plotting
+    [r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter)] = OE2ECI(oe_d_mean_series(:,iter));
+    [r_d_RTN(:, iter), v_d_RTN(:, iter)] =  ECI2RTN(r_c_ECI(:, iter), v_c_ECI(:, iter), r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter));
     
 end
 
 
-
+figure(2);
+PlotQNSROE_meters(roe_d_mean_series, a_c*1000);
+subplot(3,1,1);
+sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
 figure(3);
 plot(orbit_span, delta_v_cum_series);
 
 figure(4);
 plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));
+
+% Plot RTN
+x_RTN = [r_d_RTN', v_d_RTN'];
+PlotRTNSpace(x_RTN);
 

@@ -50,13 +50,14 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% simulation parameters
-n_orbits = 30;
-n_steps_per_orbit = 300;
+n_orbits = 300;
+n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter);
 dt = tspan(2) - tspan(1);
+orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
 %% chief absolute orbit full nonlinear propagator 
@@ -79,6 +80,7 @@ roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
 N = 4; % exponent in P matrix
 k = 1; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
+u_upperbound = 1e-3; % upper bound on control actuation
 
 %% relative motion propagator using STM (with J2)
 roe_d_mean_series = zeros(6, n_iter);
@@ -90,11 +92,15 @@ oe_d_mean_series = zeros(6, n_iter);
 
 % populate initial values
 roe_d_mean_series(:,1) = roe_d_mean;
-roe_d_osc_series(:,1) = roe_d_osc;%%%%%%%%%%%%
+roe_d_osc_series(:,1) = roe_d_osc;
 oe_c_osc_series(:,1) = oe_c_osc;
 oe_c_mean_series(:,1) = oe_c_mean;
 oe_d_osc_series(:,1) = oe_d_osc;
 oe_d_mean_series(:,1) = oe_d_mean;
+
+u_series = zeros(2, n_iter);
+cumulative_delta_v = 0;
+delta_v_cum_series = zeros(n_iter, 1);
 
 for iter = 2:n_iter
     % chief ECI from ground truth to OE
@@ -117,12 +123,21 @@ for iter = 2:n_iter
     u = - pinv(B) * (A * roe_d_mean_reducedmodel + P * Delta_roe_reducedmodel);
     
     % check lower bound for control effort
-    if u(1) < u_lowerbound
+    if abs(u(1)) < u_lowerbound
         u(1) = 0;
     end
-    if u(2) < u_lowerbound
+    if abs(u(2)) < u_lowerbound
         u(2) = 0;
     end
+    % check upper bound for control effort
+    if abs(u(1)) > u_upperbound
+        u(1) = sign(u(1)) * u_upperbound;
+    end
+    if abs(u(2)) > u_upperbound
+        u(2) = sign(u(2)) * u_upperbound;
+    end
+    
+    u_series(:,iter) = u;
     
     delta_v_RTN = [0; u];
     
@@ -135,5 +150,21 @@ for iter = 2:n_iter
     oe_d_mean_series(:,iter) = osc2mean(oe_d_osc_series(:,iter), 1);
     roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean_series(:,iter), oe_d_mean_series(:,iter));
     
+    % convert to RTN for plotting
+    
+    % total delta-v
+    dv_cur = norm(delta_v_RTN);
+    cumulative_delta_v = cumulative_delta_v + dv_cur;
+    delta_v_cum_series(iter) = cumulative_delta_v;
+    
 end
+
+
+
+
+figure(3);
+plot(orbit_span, delta_v_cum_series);
+
+figure(4);
+plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));
 

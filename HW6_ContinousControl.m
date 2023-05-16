@@ -131,9 +131,9 @@ for iter = 2:n_iter
         oe_c_osc_series(:,iter), roe_d_osc_series(:,iter), delta_v_RTN);
     
     % udpate roe's after doing manuever
-    oe_d_osc_series(:,iter) = ROE2OE(oe_c_osc(:,iter), roe_d_osc_series(:,iter));
+    oe_d_osc_series(:,iter) = ROE2OE(oe_c_osc_series(:,iter), roe_d_osc_series(:,iter));
     oe_d_mean_series(:,iter) = osc2mean(oe_d_osc_series(:,iter), 1);
-    roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean(:,iter), oe_d_mean_series(:,iter));
+    roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean_series(:,iter), oe_d_mean_series(:,iter));
     
 end
 

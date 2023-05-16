@@ -19,6 +19,7 @@ function A = A_Control_ReducedModel(oe_c)
     
     C = sin(omega);
     D = cos(omega);
+    G = 1 / eta^2;
     Q = 5*cos(i)^2 -1; 
     S = sin(2*i);
     T = sin(i)^2;

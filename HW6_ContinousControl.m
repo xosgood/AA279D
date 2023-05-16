@@ -17,10 +17,10 @@ RAAN_c = 0;
 omega_c = deg2rad(90);
 nu_c = deg2rad(-15);
 M_c = TrueToMeanAnomaly(nu_c, e_c);
-oe_c = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
+oe_c_mean = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
 % chief osculating OE
-oe_c_osc = mean2osc(oe_c, 1);
+oe_c_osc = mean2osc(oe_c_mean, 1);
 
 % get chief initial state for ode113
 [r_c_osc_0_ECI, v_c_osc_0_ECI] = OE2ECI(oe_c_osc);
@@ -28,10 +28,10 @@ x_c_osc_0 = [r_c_osc_0_ECI; v_c_osc_0_ECI];
 
 %% initialize deputy
 % deputy mean ROE
-roe_d = [0; 100; 0; 0; 0; 0] / a_c;
+roe_d_mean = [0; 100; 0; 0; 0; 0] / a_c;
 
 % deputy mean OE
-oe_d = ROE2OE(oe_c, roe_d); % deputy mean oe
+oe_d = ROE2OE(oe_c_mean, roe_d_mean); % deputy mean oe
 a_d = oe_d(1);
 e_d = oe_d(2);
 i_d = oe_d(3);
@@ -43,6 +43,7 @@ M_d = TrueToMeanAnomaly(nu_d, e_d);
 % deputy osculating OE
 oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
+roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 
 % get deputy initial state for ode113
 [r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc);
@@ -71,8 +72,7 @@ r_d_ECI = x_d_ECI(1:3,:);
 v_d_ECI = x_d_ECI(4:6,:);
 
 %% reconfiguration manuever setup
-roe_desired = [0, 100, 0, 30, 0, 30] / a_c;
-
+roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
 
 
 %% Lyapunov controller setup
@@ -89,7 +89,8 @@ oe_d_osc_series = zeros(6, n_iter);
 oe_d_mean_series = zeros(6, n_iter);
 
 % populate initial values
-roe_d_mean_series(:,1) = roe_d;
+roe_d_mean_series(:,1) = roe_d_mean;
+roe_d_osc_series(:,1) = roe_d_osc;%%%%%%%%%%%%
 oe_c_osc_series(:,1) = oe_c_osc;
 oe_c_mean_series(:,1) = oe_c_mean;
 oe_d_osc_series(:,1) = oe_d_osc;
@@ -115,6 +116,7 @@ for iter = 2:n_iter
     P = P_Control_ReducedModel(oe_c_mean_series(:,iter), N, k);
     u = - pinv(B) * (A * roe_d_mean_reducedmodel + P * Delta_roe_reducedmodel);
     
+    % check lower bound for control effort
     if u(1) < u_lowerbound
         u(1) = 0;
     end
@@ -124,12 +126,14 @@ for iter = 2:n_iter
     
     delta_v_RTN = [0; u];
     
+    % apply manuever
     roe_d_osc_series(:,iter) = ApplyDeputyManuever_NearCircular(...
         oe_c_osc_series(:,iter), roe_d_osc_series(:,iter), delta_v_RTN);
     
+    % udpate roe's after doing manuever
     oe_d_osc_series(:,iter) = ROE2OE(oe_c_osc(:,iter), roe_d_osc_series(:,iter));
     oe_d_mean_series(:,iter) = osc2mean(oe_d_osc_series(:,iter), 1);
-    % tbd
+    roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean(:,iter), oe_d_mean_series(:,iter));
     
 end
 

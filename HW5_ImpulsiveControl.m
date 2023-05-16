@@ -103,9 +103,6 @@ v_d_RTN = zeros(3, n_iter);
 r_d_ECI = zeros(3, n_iter);
 v_d_ECI = zeros(3, n_iter);
 
-% initial mean argument of latitude of deputy
-u_d_initial = oe_d_mean_series(5,1) + oe_d_mean_series(6,1);
-
 dt = tspan(2) - tspan(1);
 % propagate STM
 for iter = 1:n_iter

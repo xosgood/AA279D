@@ -83,7 +83,7 @@ N = 10; % exponent in P matrix
 k = 1; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
 u_upperbound = 1e-3; % upper bound on control actuation
-dlambda_thresh = 0.1; % km
+dlambda_thresh = 0.1;
 dlambda_dot = 0.001;
 
 %% relative motion propagator using STM (with J2)

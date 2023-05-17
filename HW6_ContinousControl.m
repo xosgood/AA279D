@@ -19,6 +19,8 @@ nu_c = deg2rad(-15);
 M_c = TrueToMeanAnomaly(nu_c, e_c);
 oe_c_mean = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
 
+n_c = sqrt(mu / a_c^3);
+
 % chief osculating OE
 oe_c_osc = mean2osc(oe_c_mean, 1);
 
@@ -81,6 +83,8 @@ N = 10; % exponent in P matrix
 k = 1; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
 u_upperbound = 1e-3; % upper bound on control actuation
+dlambda_thresh = 0.1; % km
+dlambda_dot = 0.001;
 
 %% relative motion propagator using STM (with J2)
 roe_d_mean_series = zeros(6, n_iter);
@@ -122,8 +126,14 @@ for iter = 2:n_iter
     
     % compute Lyapunov control
     Delta_roe = roe_d_mean_series(:,iter) - roe_desired;
+    if abs(Delta_roe(2)) >= dlambda_thresh
+        % impose a desired da to cause a desired drift in dlambda
+        da_des = -2/3 * sign(-Delta_roe(2)) * dlambda_dot / n_c;
+        Delta_roe(1) = roe_d_mean_series(1,iter) - da_des;
+    end
     Delta_roe_reducedmodel = [Delta_roe(1); Delta_roe(3:6)];
     roe_d_mean_reducedmodel = [roe_d_mean_series(1,iter); roe_d_mean_series(3:6,iter)];
+    
     A = A_Control_ReducedModel(oe_c_mean_series(:,iter));
     B = B_Control_ReducedModel(oe_c_mean_series(:,iter));
     P = P_Control_ReducedModel(oe_c_mean_series(:,iter), Delta_roe_reducedmodel, N, k);
@@ -156,9 +166,7 @@ for iter = 2:n_iter
     oe_d_osc_series(:,iter) = ROE2OE(oe_c_osc_series(:,iter), roe_d_osc_series(:,iter));
     oe_d_mean_series(:,iter) = osc2mean(oe_d_osc_series(:,iter), 1);
     roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean_series(:,iter), oe_d_mean_series(:,iter));
-    
-    % convert to RTN for plotting
-    
+        
     % total delta-v
     dv_cur = norm(delta_v_RTN);
     cumulative_delta_v = cumulative_delta_v + dv_cur;

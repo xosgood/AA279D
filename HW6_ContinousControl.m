@@ -181,6 +181,7 @@ plot(orbit_span, delta_v_cum_series);
 
 figure(4);
 plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));
+legend("tangential delta v", "normal delta v")
 
 % Plot RTN
 x_RTN = [r_d_RTN', v_d_RTN'];

@@ -186,6 +186,9 @@ sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
 figure(3);
 plot(orbit_span, delta_v_cum_series);
+title("Cumulative delta-v vs number of orbits passed");
+xlabel("number of orbits");
+ylabel("delta-v (km/s)");
 
 figure(4);
 plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));

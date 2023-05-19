@@ -107,6 +107,9 @@ u_series = zeros(2, n_iter);
 cumulative_delta_v = 0;
 delta_v_cum_series = zeros(n_iter, 1);
 
+% delta roe series for plotting 
+delta_roe_series = zeros(6, n_iter);
+
 % rtn for plotting. 
 r_d_RTN = zeros(3, n_iter);
 v_d_RTN = zeros(3, n_iter);
@@ -175,6 +178,9 @@ for iter = 2:n_iter
     % RTN for plotting
     [r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter)] = OE2ECI(oe_d_mean_series(:,iter));
     [r_d_RTN(:, iter), v_d_RTN(:, iter)] =  ECI2RTN(r_c_ECI(:, iter), v_c_ECI(:, iter), r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter));
+
+    % Delta ROE for plotting 
+    delta_roe_series(:,iter) = Delta_roe;
     
 end
 
@@ -186,13 +192,34 @@ sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
 figure(3);
 plot(orbit_span, delta_v_cum_series);
+<<<<<<< Updated upstream
 title("Cumulative delta-v vs number of orbits passed");
 xlabel("number of orbits");
 ylabel("delta-v (km/s)");
+=======
+xlabel("orbits");
+ylabel("\Delta v cumulative");
+>>>>>>> Stashed changes
 
 figure(4);
 plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));
 legend("tangential delta v", "normal delta v")
+xlabel("Orbits")
+ylabel("\Delta v")
+
+figure(8)
+hold on;
+plot(orbit_span, delta_roe_series(1,:));
+plot(orbit_span, delta_roe_series(2,:));
+plot(orbit_span, delta_roe_series(3,:));
+plot(orbit_span, delta_roe_series(4,:));
+plot(orbit_span, delta_roe_series(5,:));
+plot(orbit_span, delta_roe_series(6,:));
+hold off;
+xlabel("orbits");
+ylabel("ROE Error")
+legend("\Delta \delta a", "\Delta \delta \lambda", "\Delta \delta e_x", "\Delta \delta e_y", "\Delta \delta i_x", "\Delta \delta i_y")
+
 
 % Plot RTN
 x_RTN = [r_d_RTN', v_d_RTN'];

@@ -61,6 +61,8 @@ tspan = linspace(0, t_f, n_iter);
 dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
+r_noise_standard_deviation = 0.001; % [km]
+v_noise_standard_deviation = 0.0001; % [km]
 
 %% chief absolute orbit full nonlinear propagator 
 [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_c_osc_0, options);
@@ -68,8 +70,127 @@ x_c_ECI = x_c_ECI';
 r_c_ECI = x_c_ECI(1:3,:);
 v_c_ECI = x_c_ECI(4:6,:);
 
+% add gaussian noise.
+[r_noise, v_noise] = GenerateGaussianGNSSNoise(r_noise_standard_deviation, v_noise_standard_deviation);
+
+r_c_ECI_with_noise = r_c_ECI + r_noise;
+v_c_ECI_with_noise = v_c_ECI + v_noise;
+
 %% deputy absolute orbit full nonlinear propagator (for ground truth)
+% TODO: We need to figure out the best way to add control inputs to this as
+% we iterate. Possibly have a function that also takes in controls at each
+% step and only propogates one step. 
 [~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan, x_d_osc_0, options);
 x_d_ECI = x_d_ECI';
 r_d_ECI = x_d_ECI(1:3,:);
 v_d_ECI = x_d_ECI(4:6,:);
+
+%% reconfiguration manuever setup
+roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
+
+
+%% Lyapunov controller setup
+N = 10; % exponent in P matrix
+k = 1; % (1/k) factor in front of P matrix
+u_lowerbound = 1e-6; % lower bound on control actuation
+u_upperbound = 1e-3; % upper bound on control actuation
+dlambda_thresh = 0.1;
+dlambda_dot = 0.001;
+
+%% relative motion propagator using STM (with J2)
+roe_d_mean_series = zeros(6, n_iter);
+roe_d_osc_series = zeros(6, n_iter);
+oe_c_osc_series = zeros(6, n_iter);
+oe_c_mean_series = zeros(6, n_iter);
+oe_d_osc_series = zeros(6, n_iter);
+oe_d_mean_series = zeros(6, n_iter);
+
+% populate initial values
+roe_d_mean_series(:,1) = roe_d_mean;
+roe_d_osc_series(:,1) = roe_d_osc;
+oe_c_osc_series(:,1) = oe_c_osc;
+oe_c_mean_series(:,1) = oe_c_mean;
+oe_d_osc_series(:,1) = oe_d_osc;
+oe_d_mean_series(:,1) = oe_d_mean;
+
+% delta v for plotting
+u_series = zeros(2, n_iter);
+cumulative_delta_v = 0;
+delta_v_cum_series = zeros(n_iter, 1);
+
+% delta roe series for plotting 
+delta_roe_series = zeros(6, n_iter);
+
+% rtn for plotting. 
+r_d_RTN = zeros(3, n_iter);
+v_d_RTN = zeros(3, n_iter);
+r_d_ECI_with_control = zeros(3, n_iter);
+v_d_ECI_with_control = zeros(3, n_iter);
+
+for iter = 2:n_iter
+    % chief ECI from ground truth to OE
+    oe_c_osc_series(:,iter) = ECI2OE(r_c_ECI(:, iter), v_c_ECI(:, iter))';
+    oe_c_mean_series(:,iter) = osc2mean(oe_c_osc_series(:, iter), 1);
+    
+    % propagate deputy
+    roe_d_mean_series(:,iter) = STM_QNS_ROE_J2(oe_c_mean_series(:,iter), roe_d_mean_series(:,iter-1), dt);
+    oe_d_mean_series(:,iter) = ROE2OE(oe_c_mean_series(:,iter), roe_d_mean_series(:, iter));
+    oe_d_osc_series(:,iter) = mean2osc(oe_d_mean_series(:,iter), 1);
+    roe_d_osc_series(:,iter) = OE2ROE(oe_c_osc_series(:,iter), oe_d_osc_series(:,iter));
+    
+    % compute Lyapunov control
+    Delta_roe = roe_d_mean_series(:,iter) - roe_desired;
+    if abs(Delta_roe(2)) >= dlambda_thresh
+        % impose a desired da to cause a desired drift in dlambda
+        da_des = -2/3 * sign(-Delta_roe(2)) * dlambda_dot / n_c;
+        Delta_roe(1) = roe_d_mean_series(1,iter) - da_des;
+    end
+    Delta_roe_reducedmodel = [Delta_roe(1); Delta_roe(3:6)];
+    roe_d_mean_reducedmodel = [roe_d_mean_series(1,iter); roe_d_mean_series(3:6,iter)];
+    
+    A = A_Control_ReducedModel(oe_c_mean_series(:,iter));
+    B = B_Control_ReducedModel(oe_c_mean_series(:,iter));
+    P = P_Control_ReducedModel(oe_c_mean_series(:,iter), Delta_roe_reducedmodel, N, k);
+    u = - pinv(B) * (A * roe_d_mean_reducedmodel + P * Delta_roe_reducedmodel);
+    
+    % check lower bound for control effort
+    if abs(u(1)) < u_lowerbound
+        u(1) = 0;
+    end
+    if abs(u(2)) < u_lowerbound
+        u(2) = 0;
+    end
+    % check upper bound for control effort
+    if abs(u(1)) > u_upperbound
+        u(1) = sign(u(1)) * u_upperbound;
+    end
+    if abs(u(2)) > u_upperbound
+        u(2) = sign(u(2)) * u_upperbound;
+    end
+    
+    u_series(:,iter) = u;
+    
+    delta_v_RTN = [0; u];
+    
+    % apply manuever
+    roe_d_osc_series(:,iter) = ApplyDeputyManuever_NearCircular(...
+        oe_c_osc_series(:,iter), roe_d_osc_series(:,iter), delta_v_RTN);
+    
+    % udpate roe's after doing manuever
+    oe_d_osc_series(:,iter) = ROE2OE(oe_c_osc_series(:,iter), roe_d_osc_series(:,iter));
+    oe_d_mean_series(:,iter) = osc2mean(oe_d_osc_series(:,iter), 1);
+    roe_d_mean_series(:,iter) = OE2ROE(oe_c_mean_series(:,iter), oe_d_mean_series(:,iter));
+        
+    % total delta-v
+    dv_cur = norm(delta_v_RTN);
+    cumulative_delta_v = cumulative_delta_v + dv_cur;
+    delta_v_cum_series(iter) = cumulative_delta_v;
+
+    % RTN for plotting
+    [r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter)] = OE2ECI(oe_d_mean_series(:,iter));
+    [r_d_RTN(:, iter), v_d_RTN(:, iter)] =  ECI2RTN(r_c_ECI(:, iter), v_c_ECI(:, iter), r_d_ECI_with_control(:, iter), v_d_ECI_with_control(:, iter));
+
+    % Delta ROE for plotting 
+    delta_roe_series(:,iter) = Delta_roe;
+    
+end

@@ -48,10 +48,21 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 [r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
+%% Lyapunov controller setup
+roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
+N = 10; % exponent in P matrix
+k = 1; % (1/k) factor in front of P matrix
+u_lowerbound = 1e-6; % lower bound on control actuation
+u_upperbound = 1e-3; % upper bound on control actuation
+dlambda_thresh = 0.1;
+dlambda_dot = 0.001;
+lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
+
 %% UKF setup
 
 n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
+p_dims_controlinput = 3; % number of dimensions of control input
 
 n_orbits = 30;
 n_steps_per_orbit = 100;
@@ -63,12 +74,14 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.1 * dt * eye(n_dims_state);
-R = diag([10, 10, 10, .2, .2, .2, 10, 10, 10, .2, .2, .2]); % eye(m_dims_meas);
+Q = 0.001 * eye(n_dims_state);
+R = diag([0.010, 0.010, 0.010, .002, .002, .002, 0.010, 0.010, 0.010, .002, .002, .002]); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
 y = zeros(m_dims_meas, n_iter-1); % measurements (osculating)
+
+u = zeros(p_dims_controlinput, n_iter-1); % control inputs (delta-vs in RTN, will be populated throughout propagation)
 
 mu = zeros(n_dims_state, n_iter); % state estimate (estimated osculating roe)
 Sigma = zeros(n_dims_state, n_dims_state, n_iter); % covariance estimate
@@ -81,30 +94,41 @@ Sigma_0 = 0.1 * eye(n_dims_state); % initial covariance estimate
 
 
 
-for i = 2:n_iter
+for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
+    % apply control to ground truth
+    dx_RTN = [0; 0; 0; u(:,iter-1)];
+%     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,i-1), dx_RTN);
+%     dv_ECI = x_and_dv_ECI(4:6);
+%     x_absolute(10:12,i) = x_absolute(10:12,i-1) + dv_ECI;
+    x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
+    
     %w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise
     v = mvnrnd(zeros(m_dims_meas, 1), R)'; % measurement noise
     
-    [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(i-1:i), x_absolute(1:6,i-1), options);
-    [~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(i-1:i), x_absolute(7:12,i-1), options);
-    x_absolute(1:6,i) = x_c_ECI(end,:);
-    x_absolute(7:12,i) = x_d_ECI(end,:);
+    [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(iter-1:iter), x_absolute(1:6,iter-1), options);
+    [~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(iter-1:iter), x_absolute(7:12,iter), options);
+    x_absolute(1:6,iter) = x_c_ECI(end,:);
+    x_absolute(7:12,iter) = x_d_ECI(end,:);
     
-    oe_c_osc_cur = ECI2OE(x_absolute(1:3,i), x_absolute(4:6,i));
-    oe_d_osc_cur = ECI2OE(x_absolute(7:9,i), x_absolute(10:12,i));
+    oe_c_osc_cur = ECI2OE(x_absolute(1:3,iter), x_absolute(4:6,iter));
+    oe_d_osc_cur = ECI2OE(x_absolute(7:9,iter), x_absolute(10:12,iter));
     
-    x_roe(:,i) = OE2ROE(oe_c_osc_cur, oe_d_osc_cur);
+    x_roe(:,iter) = OE2ROE(oe_c_osc_cur, oe_d_osc_cur);
+    
+    oe_c_mean_cur = osc2mean(oe_c_osc_cur, 1);
+    oe_d_mean_cur = osc2mean(oe_d_osc_cur, 1);
+    roe_d_mean_cur = OE2ROE(oe_c_mean_cur, oe_d_mean_cur);
     
     % measure
-    y(:,i-1) = x_absolute(:,i) + v;
+    y(:,iter-1) = x_absolute(:,iter) + v;
     
     
     %%% UKF
     % predict (regular KF style, since our dynamics are linear)
-    A = DynamicsJacobian(mu(:,i-1), u(:,i-1), dt); % Jacobian for dynamics
-    mu(:,i) = f(mu(:,i-1), u(:,i-1), dt); % mean predict
-    Sigma(:,:,i) = A * Sigma(:,:,i-1) * A' + Q; % covariance predict
+    A = DynamicsJacobian(oe_c_osc_cur, dt); % Jacobian for dynamics
+    mu(:,iter) = f(mu(:,iter-1), u(:,iter-1), oe_c_osc_cur, dt); % mean predict
+    Sigma(:,:,iter) = A * Sigma(:,:,iter-1) * A' + Q; % covariance predict
 %     % predict (UKF style)
 %     [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
 %     for j = 1:size(points, 2) % loop through sigma-points
@@ -113,17 +137,20 @@ for i = 2:n_iter
 %     [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
 %     Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
     % update
-    [points, weights] = UT(mu(:,i), Sigma(:,:,i)); % update sigma-points using predicted mean and covariance
+    [points, weights] = UT(mu(:,iter), Sigma(:,:,iter)); % update sigma-points using predicted mean and covariance
     y_preds = zeros(m_dims_meas, size(points, 2)); % create vector to hold predicted measurements at each sigma-point
     for j = 1:size(points, 2) % loop through sigma-points and measure
         y_preds(:,j) = g(points(:,j), oe_c_osc_cur); % predicted measurements at each sigma point
     end
     [y_hat, Sigma_yy] = UTInverse(y_preds, weights); % get expected measurement and expected measurement covariance
     Sigma_yy = Sigma_yy + R; % add measurement noise to covariance
-    Sigma_xy = (weights .* (points - mu(:,i))) * (y_preds - y_hat)'; % cross covariance between sigma-points and predicted measurements
+    Sigma_xy = (weights .* (points - mu(:,iter))) * (y_preds - y_hat)'; % cross covariance between sigma-points and predicted measurements
     K = Sigma_xy / Sigma_yy; % "Kalman gain"
-    mu(:,i) = mu(:,i) + K * (y(:,i-1) - y_hat); % mean update
-    Sigma(:,:,i) = Sigma(:,:,i) - K * Sigma_xy'; % covariance update
+    mu(:,iter) = mu(:,iter) + K * (y(:,iter-1) - y_hat); % mean update
+    Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
+    
+    %%% compute control for next timestep to use
+    u(:,iter) = LyapunovController(roe_d_mean_cur, roe_desired, oe_c_mean_cur, lyap_params);
 end
 
 
@@ -133,9 +160,8 @@ end
 
 %% functions
 % nonlinear dynamics
-function x_new = f(x_old, u,oe_c_osc, dt)
-    delta_v_RTN = [0; u];
-    B = GenerateBControlsMatrix(osc_2_mean(oe_c_osc,1));
+function x_new = f(x_old, u, oe_c_osc, dt)
+    B = GenerateBControlsMatrix(osc2mean(oe_c_osc,1));
 
     oe_c_mean = osc2mean(oe_c_osc, 1);
     oe_d_osc = ROE2OE(oe_c_osc, x_old);
@@ -143,7 +169,7 @@ function x_new = f(x_old, u,oe_c_osc, dt)
     roe_d_mean = OE2ROE(oe_c_mean, oe_d_mean);
     
     A = DynamicsJacobian(oe_c_osc, dt);
-    x_new = A * roe_d_mean + B*delta_v_RTN;
+    x_new = A * roe_d_mean + B*u;
 end
 
 

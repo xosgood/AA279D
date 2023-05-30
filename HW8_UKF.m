@@ -134,38 +134,32 @@ end
 %% functions
 % nonlinear dynamics
 function x_new = f(x_old, u,oe_c_osc, dt)
-    % x_old is the previous roe state of the deputy.
-    x_new = zeros(size(x_old));
-
     delta_v_RTN = [0; u];
     B = GenerateBControlsMatrix(u, osc_2_mean(oe_c_osc,1));
-    x_new = B * delta_v_RTN;
 
     oe_c_mean = osc2mean(oe_c_osc, 1);
     oe_d_osc = ROE2OE(oe_c_osc, x_old);
     oe_d_mean = osc2mean(oe_d_osc, 1);
     roe_d_mean = OE2ROE(oe_c_mean, oe_d_mean);
- 
-    roe_d_mean_new = STM_QNS_ROE_J2(oe_c_mean, roe_d_mean, dt);
-
     
+    A = DynamicsJacobian(oe_c_osc, dt);
+    x_new = A * roe_d_mean + B*delta_v_RTN;
 end
 
 
 % nonlinear measurement function
-function y = g(x, oe_c)
+function y = g(x, oe_c_osc)
     % map roe of deputy and oe of chief to ECI of chief and deputy.
     % x is roe of deputy.
-    oe_d = ROE2OE(oe_c, x);
-    [r_c_ECI, v_c_ECI] = OE2ECI(oe_c);
-    [r_d_ECI, v_d_ECI] = OE2ECI(oe_d);
+    oe_d_osc = ROE2OE(oe_c_osc, x);
+    [r_c_ECI, v_c_ECI] = OE2ECI(oe_c_osc);
+    [r_d_ECI, v_d_ECI] = OE2ECI(oe_d_osc);
+    
     y = [r_c_ECI; v_c_ECI; r_d_ECI; v_d_ECI];
 end
 
 % generate Jacobian for dynamics
-function A = DynamicsJacobian(x, u, oe_c_osc, dt)
-    A = eye(length(x));
-    A(1,3) = -dt * u(1) * sin(x(3));
-    A(2,3) = dt * u(1) * cos(x(3));
+function A = DynamicsJacobian(oe_c_osc, dt)
+    A = GenerateSTMJ2(oe_c_osc, dt);
 end
 

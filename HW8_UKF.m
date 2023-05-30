@@ -135,7 +135,7 @@ end
 % nonlinear dynamics
 function x_new = f(x_old, u,oe_c_osc, dt)
     delta_v_RTN = [0; u];
-    B = GenerateBControlsMatrix(u, osc_2_mean(oe_c_osc,1));
+    B = GenerateBControlsMatrix(osc_2_mean(oe_c_osc,1));
 
     oe_c_mean = osc2mean(oe_c_osc, 1);
     oe_d_osc = ROE2OE(oe_c_osc, x_old);
@@ -154,7 +154,7 @@ function y = g(x, oe_c_osc)
     oe_d_osc = ROE2OE(oe_c_osc, x);
     [r_c_ECI, v_c_ECI] = OE2ECI(oe_c_osc);
     [r_d_ECI, v_d_ECI] = OE2ECI(oe_d_osc);
-    
+
     y = [r_c_ECI; v_c_ECI; r_d_ECI; v_d_ECI];
 end
 

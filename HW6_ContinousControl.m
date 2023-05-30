@@ -1,4 +1,4 @@
-% Chris Osgood
+% Chris Osgood and Paxton Scott
 % 5/15/23
 % AA279D HW6
 % Continous Control

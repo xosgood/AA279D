@@ -133,10 +133,24 @@ end
 
 %% functions
 % nonlinear dynamics
-function x_new = f(x_old, u, dt)
+function x_new = f(x_old, u,oe_c_osc, dt)
+    % x_old is the previous roe state of the deputy.
     x_new = zeros(size(x_old));
+
+    delta_v_RTN = [0; u];
+    B = GenerateBControlsMatrix(u, osc_2_mean(oe_c_osc,1));
+    x_new = B * delta_v_RTN;
+
+    oe_c_mean = osc2mean(oe_c_osc, 1);
+    oe_d_osc = ROE2OE(oe_c_osc, x_old);
+    oe_d_mean = osc2mean(oe_d_osc, 1);
+    roe_d_mean = OE2ROE(oe_c_mean, oe_d_mean);
+ 
+    roe_d_mean_new = STM_QNS_ROE_J2(oe_c_mean, roe_d_mean, dt);
+
     
 end
+
 
 % nonlinear measurement function
 function y = g(x, oe_c)
@@ -149,7 +163,7 @@ function y = g(x, oe_c)
 end
 
 % generate Jacobian for dynamics
-function A = DynamicsJacobian(x, u, dt)
+function A = DynamicsJacobian(x, u, oe_c_osc, dt)
     A = eye(length(x));
     A(1,3) = -dt * u(1) * sin(x(3));
     A(2,3) = dt * u(1) * cos(x(3));

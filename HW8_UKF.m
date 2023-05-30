@@ -64,8 +64,8 @@ n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-n_orbits = 30;
-n_steps_per_orbit = 100;
+n_orbits = 10;
+n_steps_per_orbit = 30;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
@@ -74,8 +74,8 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.001 * eye(n_dims_state);
-R = diag([0.010, 0.010, 0.010, .002, .002, .002, 0.010, 0.010, 0.010, .002, .002, .002]); % eye(m_dims_meas);
+Q = 0.000001 * eye(n_dims_state);
+R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e5); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
@@ -98,9 +98,9 @@ for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
     % apply control to ground truth
     dx_RTN = [0; 0; 0; u(:,iter-1)];
-%     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,i-1), dx_RTN);
+%     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
 %     dv_ECI = x_and_dv_ECI(4:6);
-%     x_absolute(10:12,i) = x_absolute(10:12,i-1) + dv_ECI;
+%     x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
     x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
     
     %w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise
@@ -155,7 +155,13 @@ end
 
 
 
+figure; grid on; hold on;
+plot(tspan, x_roe(1,:));
+plot(tspan, mu(1,:));
 
+figure; grid on; hold on;
+plot(tspan, x_roe(2,:));
+plot(tspan, mu(2,:));
 
 
 %% functions

@@ -75,11 +75,12 @@ orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
 Q = 0.000001 * eye(n_dims_state);
-R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e5); % eye(m_dims_meas);
+R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
 y = zeros(m_dims_meas, n_iter-1); % measurements (osculating)
+measured_roe = zeros(n_dims_state, n_iter); % the roe values based on measurment.
 
 u = zeros(p_dims_controlinput, n_iter-1); % control inputs (delta-vs in RTN, will be populated throughout propagation)
 
@@ -92,6 +93,8 @@ x_roe(:,1) = roe_d_osc(:); % initial truth state
 mu_0 = zeros(n_dims_state, 1); % initial state estimate
 Sigma_0 = 0.1 * eye(n_dims_state); % initial covariance estimate
 
+Sigma(:,:,1) = Sigma_0;
+mu(:,1) = mu_0;
 
 
 for iter = 2:n_iter
@@ -122,6 +125,12 @@ for iter = 2:n_iter
     
     % measure
     y(:,iter-1) = x_absolute(:,iter) + v;
+
+    oe_c_osc_mes = ECI2OE(y(1:3,iter-1), y(4:6,iter-1));
+    oe_d_osc_mes = ECI2OE(y(7:9,iter-1), y(10:12,iter-1));
+
+    measured_roe(:,iter) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
+
     
     
     %%% UKF
@@ -156,12 +165,44 @@ end
 
 
 figure; grid on; hold on;
+title("\delta a vs. time")
 plot(tspan, x_roe(1,:));
 plot(tspan, mu(1,:));
+plot(tspan, measured_roe(1,:));
+legend("state estimate", "ground truth", "measured");
+xlabel("time [s]");
+ylabel("\delta a [km]")
 
 figure; grid on; hold on;
+title("\delta \Omega vs. time")
 plot(tspan, x_roe(2,:));
 plot(tspan, mu(2,:));
+plot(tspan, measured_roe(2,:));
+legend("state estimate", "ground truth", "measured");
+xlabel("time [s]");
+ylabel("\delta \Omega [rad]")
+
+figure; grid on; hold on;
+title("\delta \Omega vs. time")
+plot(tspan, x_roe(2,:));
+plot(tspan, mu(2,:));
+plot(tspan, measured_roe(2,:));
+legend("state estimate", "ground truth", "measured");
+xlabel("time [s]");
+ylabel("\delta \Omega [rad]");
+
+figure; grid on; hold on;
+title("\delta e_x vs. time")
+plot(tspan, x_roe(5,:));
+plot(tspan, mu(5,:));
+plot(tspan, measured_roe(5,:));
+legend("state estimate", "ground truth", "measured");
+xlabel("time [s]");
+ylabel("\delta e_x")
+
+GraphErrorTerms(tspan, x_roe, mu, Sigma, n_iter);
+
+
 
 
 %% functions
@@ -193,5 +234,25 @@ end
 % generate Jacobian for dynamics
 function A = DynamicsJacobian(oe_c_osc, dt)
     A = GenerateSTMJ2(oe_c_osc, dt);
+end
+
+function GraphErrorTerms(tspan, x_true, x_pred, Sigma, n)
+    figure; grid on; hold on;
+    title("Estimation error vs. time")
+
+    err = abs(x_true(1,:)- x_pred(1,:));
+    plot(tspan, err,'red');
+    plot(tspan, err - reshape(Sigma(1,1,:),[1,n]), 'blue');
+    plot(tspan, err + reshape(Sigma(1,1,:),[1,n]), 'blue');
+    %xconf = [tspan tspan(end:-1:1)];
+    %yconf = [err - reshape(Sigma(1,1,:),[1,n]), err + reshape(Sigma(1,1,:),[1,n])];
+    %p = fill(xconf,yconf, 'red');
+    %p.FaceColor = [1 0.8 0.8];      
+    %p.EdgeColor = 'none';  
+   
+    legend("\delta a error", "upper and low confidence bound of 1 variance")
+    %legend("\delta a error", "\delta \Omega error", "\delta i_x error", "\delta i_y error", "\delta e_x error", "\delta e_y error");
+    xlabel("time [s]")
+    ylabel("\delta OE")
 end
 

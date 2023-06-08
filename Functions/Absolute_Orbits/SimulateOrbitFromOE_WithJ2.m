@@ -28,7 +28,8 @@ function data_sim = SimulateOrbitFromOE_WithJ2(a, e, i, RAAN, omega, M_0, geod_s
     r_ENU_vec = zeros(3,n_iter);
     az_el_rho_vec = zeros(3,n_iter);
     for iter = 1:n_iter
-        [r_ECI_vec(:,iter), v_ECI_vec(:,iter)] = OE2ECI(a, e, i, RAAN, omega, nu_vec(iter));
+        oe = [a; e; i; RAAN; omega; nu_vec(iter)];
+        [r_ECI_vec(:,iter), v_ECI_vec(:,iter)] = OE2ECI(oe);
         if iter > 1 % skip the very first iteration
             % compute mean J2 effects
             dRAANdt = -(3/2) * n * J2 * (R_E / (a * (1-e^2)))^2 * cos(i);

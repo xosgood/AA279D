@@ -1,4 +1,4 @@
-function data_sim = SimulateOrbitFromOE(a, e, i, RAAN, omega, M_0, geod_station, t_0_MJD, t_f_MJD, n_iter)
+function data_sim = SimulateOrbitFromOE(oe, geod_station, t_0_MJD, t_f_MJD, n_iter)
     % SIMULATEORBITFROMOE simulates an orbit from t_0 to t_f using the
     % provided orbital elements. 
     % It assumes Earth is the central body. 
@@ -9,6 +9,10 @@ function data_sim = SimulateOrbitFromOE(a, e, i, RAAN, omega, M_0, geod_station,
     % azimuth and elevation and range, 
     % geod_vec contains [lat_vec; lon_vec; h_vec].
     % It 
+    a = oe(1);
+    e = oe(2);
+    M_0 = oe(6);
+    
     seconds_per_day = 86400;
     eps = 1e-12;
     [x_vec, y_vec, t_vec_sec, nu_vec, r_vec] = ...
@@ -22,7 +26,8 @@ function data_sim = SimulateOrbitFromOE(a, e, i, RAAN, omega, M_0, geod_station,
     r_ENU_vec = zeros(3,n_iter);
     az_el_rho_vec = zeros(3,n_iter);
     for iter = 1:n_iter
-        [r_ECI_vec(:,iter), v_ECI_vec(:,iter)] = OE2ECI(a, e, i, RAAN, omega, nu_vec(iter));
+        oe(6) = nu_vec(iter);
+        [r_ECI_vec(:,iter), v_ECI_vec(:,iter)] = OE2ECI(oe);
         GMST = MJDToGMST(t_vec_MJD(iter));
         [r_ECEF_vec(:,iter), v_ECEF_vec(:,iter)] = ECI2ECEF(r_ECI_vec(:,iter), v_ECI_vec(:,iter), GMST);
         [geod_vec(1,iter), geod_vec(2,iter), geod_vec(3,iter)] = ECEF2Geod(r_ECEF_vec(:,iter), eps);

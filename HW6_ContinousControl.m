@@ -52,7 +52,7 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% simulation parameters
-n_orbits = 300;
+n_orbits = 30;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -191,29 +191,76 @@ subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
 figure(3);
-plot(orbit_span, delta_v_cum_series);
-title("Cumulative delta-v vs number of orbits passed");
+subplot(2,1,1);
+plot(orbit_span, 1000 * delta_v_cum_series);
+grid on;
 xlabel("number of orbits");
-ylabel("delta-v (km/s)");
+ylabel("delta-v (m/s)");
+subplot(2,1,2);
+plot(orbit_span, 1000 * delta_v_cum_series);
+xlim([0, 3]);
+grid on;
+sgtitle("Cumulative delta-v vs number of orbits passed");
+xlabel("number of orbits");
+ylabel("delta-v (m/s)");
 
 figure(4);
-plot(orbit_span, u_series(1,:), orbit_span, u_series(2,:));
-legend("tangential delta v", "normal delta v")
-xlabel("Orbits")
-ylabel("\Delta v")
+sgtitle("Delta-v components vs number of orbits passed");
+subplot(2,1,1);
+plot(orbit_span, 1000 * u_series(1,:), orbit_span, 1000 * u_series(2,:));
+ylim([-4e-3, 4e-3]);
+grid on;
+legend("tangential delta v", "normal delta v");
+xlabel("number of orbits");
+ylabel("delta-v (m/s");
+subplot(2,1,2);
+plot(orbit_span, 1000 * u_series(1,:), orbit_span, 1000 * u_series(2,:));
+xlim([0,4]);
+ylim([-1.1, 1.1]);
+grid on;
+legend("tangential delta v", "normal delta v");
+xlabel("number of orbits");
+ylabel("delta-v (m/a");
 
-figure(8)
+figure(8);
+sgtitle("Change in ROEs vs number of orbits passed");
 hold on;
+subplot(3,2,1);
 plot(orbit_span, delta_roe_series(1,:));
-plot(orbit_span, delta_roe_series(2,:));
-plot(orbit_span, delta_roe_series(3,:));
-plot(orbit_span, delta_roe_series(4,:));
-plot(orbit_span, delta_roe_series(5,:));
-plot(orbit_span, delta_roe_series(6,:));
-hold off;
+xlim([0,4]);
+grid on;
 xlabel("orbits");
-ylabel("ROE Error")
-legend("\Delta \delta a", "\Delta \delta \lambda", "\Delta \delta e_x", "\Delta \delta e_y", "\Delta \delta i_x", "\Delta \delta i_y")
+ylabel("\Delta \delta a");
+subplot(3,2,2);
+plot(orbit_span, delta_roe_series(2,:));
+xlim([0,4]);
+grid on;
+xlabel("orbits");
+ylabel("\Delta \delta \lambda");
+subplot(3,2,3);
+plot(orbit_span, delta_roe_series(3,:));
+xlim([0,4]);
+grid on;
+xlabel("orbits");
+ylabel("\Delta \delta e_x");
+subplot(3,2,4);
+plot(orbit_span, delta_roe_series(4,:));
+xlim([0,4]);
+grid on;
+xlabel("orbits");
+ylabel("\Delta \delta e_y");
+subplot(3,2,5);
+plot(orbit_span, delta_roe_series(5,:));
+xlim([0,4]);
+grid on;
+xlabel("orbits");
+ylabel("\Delta \delta i_x");
+subplot(3,2,6);
+plot(orbit_span, delta_roe_series(6,:));
+xlim([0,4]);
+grid on;
+xlabel("orbits");
+ylabel("\Delta \delta i_y");
 
 
 % Plot RTN

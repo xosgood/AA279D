@@ -42,7 +42,7 @@ oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
 
 % simulation parameters.
-n_orbits = 300;
+n_orbits = 500;
 n_steps_per_orbit = 500;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -137,9 +137,9 @@ for iter = 1:n_iter
             && adex > adex_max ... % dex has gone beyond our dead-band threshold
             && ~form_keep_man % we aren't already in the middle of a formation keeping manuever
             % compute manuever for formation keeping
-            u_fk_burns = [wrapToPi(u_c_cur), wrapToPi(u_c_cur + pi)];
+            u_fk_burns = [wrapToPi(u_c_cur), wrapToPi(u_c_cur + pi), wrapToPi(u_c_cur + 2 * pi)];
             roe_i_fk = QNS_roe_d_series_STM(:,iter+1)';
-            roe_f_fk = roe_i_fk;
+            roe_f_fk = roe_f;
             roe_f_fk(3) = -adex_max / a_c; % push dex to other side of dead band
             delta_vs_fk = LS_control_solve(oe_c_mean_series(:, iter), roe_f_fk - roe_i_fk, u_fk_burns);
             form_keep_man = true;
@@ -162,12 +162,12 @@ for iter = 1:n_iter
     end
 end
 
-figure(2);
+figure(2); grid on;
 PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
-figure(3);
+figure(3); grid on;
 plot((1:n_iter)/n_steps_per_orbit, delta_v_series);
 sgtitle("Delta V vs orbits");
 xlabel("orbits");
@@ -175,39 +175,39 @@ ylabel("cumulative delta v")
 
 % plot ROE vs time. 
 figure(4);
-hold on;
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,3));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(3,:));
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,4));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(4,:));
+hold on; grid on;
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,3));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(3,:));
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,4));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(4,:));
 hold off;
 xlabel("orbits");
 ylabel("ROEs");
-legend("\delta ex desired", "\delta ex actual", "\delta ey desired", "\delta ey actual")
+legend("a \delta ex desired", "a \delta ex actual", "a \delta ey desired", "a \delta ey actual")
 sgtitle("Desired vs. actual ROEs");
 
 figure(5);
-hold on;
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,5));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(5,:));
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,6));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(6,:));
+hold on; grid on;
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,5));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(5,:));
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,6));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(6,:));
 hold off;
 xlabel("orbits");
 ylabel("ROEs");
-legend("\delta ix desired", "\delta ix actual", "\delta iy desired", "\delta iy actual")
+legend("a \delta ix desired", "a \delta ix actual", "a \delta iy desired", "a \delta iy actual")
 sgtitle("Desired vs. actual ROEs");
 
 figure(6);
-hold on;
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,1));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(1,:));
-plot((1:n_iter)/n_steps_per_orbit, roes_desired(:,2));
-plot((1:n_iter)/n_steps_per_orbit, QNS_roe_d_series_STM(2,:));
+hold on; grid on;
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,1));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(1,:));
+plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,2));
+plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(2,:));
 hold off;
 xlabel("orbits");
 ylabel("ROEs");
-legend("\delta a desired", "\delta a actual", "\delta \lambda desired", "\delta \lambda actual")
+legend("a \delta a desired", "a \delta a actual", "a \delta \lambda desired", "a \delta \lambda actual")
 sgtitle("Desired vs. actual ROEs");
 
 % Plot RTN

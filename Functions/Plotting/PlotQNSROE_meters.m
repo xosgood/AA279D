@@ -14,7 +14,7 @@ function PlotQNSROE_meters(roe_qns, a_c)
     subplot(3,1,1);
     plot(a_c * dex, a_c * dey, ".-");
     axis equal;
-    hold on;
+    hold on; grid on;
     xlabel("a \delta e_x [m]");
     ylabel("a \delta e_y [m]");
     title("Relative eccentricity vector");
@@ -22,7 +22,7 @@ function PlotQNSROE_meters(roe_qns, a_c)
     subplot(3,1,2);
     plot(a_c * dix, a_c * diy, ".-");
     axis equal;
-    hold on;
+    hold on; grid on;
     xlabel("a \delta i_x [m]");
     ylabel("a \delta i_y [m]");
     title("Relative inclination vector");
@@ -30,7 +30,7 @@ function PlotQNSROE_meters(roe_qns, a_c)
     subplot(3,1,3);
     plot(a_c * dlambda, a_c * da, ".-");
     axis equal;
-    hold on;
+    hold on; grid on;
     xlabel("a \delta \lambda [m]");
     ylabel("a \delta a [m]");
     title("Relative mean longitude and semi-major axis");

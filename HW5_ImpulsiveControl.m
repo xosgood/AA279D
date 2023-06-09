@@ -42,7 +42,7 @@ oe_d_mean = oe_d;
 oe_d_osc = mean2osc(oe_d_mean, 1);
 
 % simulation parameters.
-n_orbits = 500;
+n_orbits = 200;
 n_steps_per_orbit = 500;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -79,6 +79,7 @@ reconfig_counter = 1;
 
 %% 4) Formation keeping control parameters
 adex_max = 10; % km
+adlambda_max = 50; % km, plus/minus from desired dlambda
 form_keep_man = false; % flag to keep track of if we have a formation keeping maneuver that we need to perform
 form_keep_counter = 1;
 
@@ -133,14 +134,20 @@ for iter = 1:n_iter
         
         % Compute Formation Keeping Control
         adex = a_c * QNS_roe_d_series_STM(3,iter+1);
-        if iter > n_steps_per_orbit ... % only perform formation keeping after we've gone through 1 orbit already (to account for reconfig maneuver)
-            && adex > adex_max ... % dex has gone beyond our dead-band threshold
+        adlambda = a_c * QNS_roe_d_series_STM(2,iter+1);
+        adlambda_desired = a_c * roe_f(2);
+        adlambda_error = adlambda - adlambda_desired;
+        if iter > 3 * n_steps_per_orbit ... % only perform formation keeping after we've gone through 1 orbit already (to account for reconfig maneuver)
+            && (adex > adex_max || abs(adlambda_error) > adlambda_max) ... % dex or dlambda has gone beyond our dead-band threshold
             && ~form_keep_man % we aren't already in the middle of a formation keeping manuever
             % compute manuever for formation keeping
-            u_fk_burns = [wrapToPi(u_c_cur), wrapToPi(u_c_cur + pi), wrapToPi(u_c_cur + 2 * pi)];
+            u_fk_burns = [wrapToPi(u_c_cur), wrapToPi(u_c_cur + pi), wrapToPi(u_c_cur + 2*pi)];
             roe_i_fk = QNS_roe_d_series_STM(:,iter+1)';
             roe_f_fk = roe_f;
             roe_f_fk(3) = -adex_max / a_c; % push dex to other side of dead band
+            if adex > adex_max
+                roe_f_fk(4) = QNS_roe_d_series_STM(4,iter+1);
+            end
             delta_vs_fk = LS_control_solve(oe_c_mean_series(:, iter), roe_f_fk - roe_i_fk, u_fk_burns);
             form_keep_man = true;
         end
@@ -158,28 +165,29 @@ for iter = 1:n_iter
                 form_keep_man = false;
             end
         end
-        
     end
 end
 
-figure(2); grid on;
+figure(2);
 PlotQNSROE_meters(QNS_roe_d_series_STM, a_c*1000);
 subplot(3,1,1);
 sgtitle("Mean relative orbital elements of deputy, with J2, STM");
 
-figure(3); grid on;
+figure(3);
 plot((1:n_iter)/n_steps_per_orbit, delta_v_series);
+grid on;
 sgtitle("Delta V vs orbits");
 xlabel("orbits");
 ylabel("cumulative delta v")
 
 % plot ROE vs time. 
 figure(4);
-hold on; grid on;
+hold on;
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,3));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(3,:));
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,4));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(4,:));
+grid on;
 hold off;
 xlabel("orbits");
 ylabel("ROEs");
@@ -187,11 +195,12 @@ legend("a \delta ex desired", "a \delta ex actual", "a \delta ey desired", "a \d
 sgtitle("Desired vs. actual ROEs");
 
 figure(5);
-hold on; grid on;
+hold on;
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,5));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(5,:));
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,6));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(6,:));
+grid on;
 hold off;
 xlabel("orbits");
 ylabel("ROEs");
@@ -199,11 +208,12 @@ legend("a \delta ix desired", "a \delta ix actual", "a \delta iy desired", "a \d
 sgtitle("Desired vs. actual ROEs");
 
 figure(6);
-hold on; grid on;
+hold on;
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,1));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(1,:));
 plot((1:n_iter)/n_steps_per_orbit, a_c * roes_desired(:,2));
 plot((1:n_iter)/n_steps_per_orbit, a_c * QNS_roe_d_series_STM(2,:));
+grid on;
 hold off;
 xlabel("orbits");
 ylabel("ROEs");

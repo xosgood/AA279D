@@ -101,9 +101,12 @@ for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
     % apply control to ground truth
     dx_RTN = [0; 0; 0; u(:,iter-1)];
-%     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
-%     dv_ECI = x_and_dv_ECI(4:6);
-%     x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
+    %{
+    % old (wrong method of converting to ECI
+    x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
+    dv_ECI = x_and_dv_ECI(4:6);
+    x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
+    %}
     x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
     
     %w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise
@@ -138,13 +141,15 @@ for iter = 2:n_iter
     A = DynamicsJacobian(oe_c_osc_cur, dt); % Jacobian for dynamics
     mu(:,iter) = f(mu(:,iter-1), u(:,iter-1), oe_c_osc_cur, dt); % mean predict
     Sigma(:,:,iter) = A * Sigma(:,:,iter-1) * A' + Q; % covariance predict
-%     % predict (UKF style)
-%     [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
-%     for j = 1:size(points, 2) % loop through sigma-points
-%         points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
-%     end
-%     [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
-%     Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
+    %{
+    % predict (UKF style)
+    [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
+    for j = 1:size(points, 2) % loop through sigma-points
+        points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
+    end
+    [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
+    Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
+    %}
     % update
     [points, weights] = UT(mu(:,iter), Sigma(:,:,iter)); % update sigma-points using predicted mean and covariance
     y_preds = zeros(m_dims_meas, size(points, 2)); % create vector to hold predicted measurements at each sigma-point
@@ -162,7 +167,7 @@ for iter = 2:n_iter
     u(:,iter) = LyapunovController(roe_d_mean_cur, roe_desired, oe_c_mean_cur, lyap_params);
 end
 
-
+%% plotting
 
 figure; grid on; hold on;
 title("\delta a vs. time")

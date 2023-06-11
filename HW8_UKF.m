@@ -74,7 +74,7 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.000001 * eye(n_dims_state);
+Q = 0.0001 * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics

@@ -29,7 +29,7 @@ function roe = OE2ROE(oe_c, oe_d)
     
     % Form relative orbital elements
     da = (a_d - a_c) / a_c;
-    dlambda = dM + domega + dRAAN * cos(i_c);
+    dlambda = wrapToPi(dM + domega) + dRAAN * cos(i_c);
     dex = e_d * cos(omega_d) - e_c * cos(omega_c);
     dey = e_d * sin(omega_d) - e_c * sin(omega_c);
     dix = wrapToPi(i_d - i_c);

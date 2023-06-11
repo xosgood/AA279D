@@ -16,7 +16,7 @@ function PlotConfidenceInterval(orbit_span, x, mu, Sigma, a_c)
                mu(6,:) + a * sqrt(reshape(Sigma(6,6,:), 1,length(Sigma(6,6,:)))), mu(6,end:-1:1) - a * sqrt(reshape(Sigma(6,6,end:-1:1), 1,length(Sigma(6,6,end:-1:1))))];
 
     figure; grid on; hold on;
-    sgtitle("Estimation error vs. time");
+    sgtitle("True and Estimated ROEs vs. orbits, showing 95% confidence interval");
     ylabels = ["a\delta a [km]", "a\delta \lambda [km]", "a\delta e_x [km]", "a\delta e_y [km]", "a\delta i_x [km]", "a\delta i_y [km]"];
     
     for i = 1:6

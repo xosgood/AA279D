@@ -5,7 +5,7 @@
 clc; clear; close all;
 addpath(genpath("Functions/"));
 
-rng(273);
+rng(279);
 
 %% relative motion setup
 % constants
@@ -49,7 +49,7 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% sim setup
-n_orbits = 6;
+n_orbits = 5;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu_E);
@@ -101,14 +101,6 @@ for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
     % apply control to ground truth
     dx_RTN = [0; 0; 0; u(:,iter-1)];
-    %HOW TO FIX IT! TAKE PREV ECI and convert to RTN, then add dv in RTN, then convert back to ECI using prev ECI position
-    %{ 
-    % old (wrong method of converting to ECI
-    x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
-    dv_ECI = x_and_dv_ECI(4:6);
-    x_absolute(7:9,iter) = x_absolute(7:9,iter-1);
-    x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
-    %}
     x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
     
     w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise (currently only used for input to controller)
@@ -129,7 +121,7 @@ for iter = 2:n_iter
     roe_d_mean_cur = OE2ROE(oe_c_mean_cur, oe_d_mean_cur);
     
     % add noise for controller
-    roe_d_mean_cur_noisy = roe_d_mean_cur% + w;
+    roe_d_mean_cur_noisy = roe_d_mean_cur + w;
     
     % measure
     y(:,iter-1) = x_absolute(:,iter) + v;
@@ -214,13 +206,18 @@ xlabel("time [s]");
 ylabel("a\delta i_y [km]")
 
 PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
-subplot(3,2,1); ylim([-50, 50]);
-subplot(3,2,2); ylim([0, 200]);
-subplot(3,2,3); ylim([-40, 40]);
-subplot(3,2,4); ylim([-20, 60]);
-subplot(3,2,5); ylim([-20, 20]);
-subplot(3,2,6); ylim([0, 60]);
-
+subplot(3,2,1); ylim([-70, 70]);
+subplot(3,2,2); ylim([-500, 800]);
+subplot(3,2,3); ylim([-60, 60]);
+subplot(3,2,4); ylim([-20, 100]);
+subplot(3,2,5); ylim([-40, 60]);
+subplot(3,2,6); ylim([-20, 80]);
+% subplot(3,2,1); ylim([-40, 50]);
+% subplot(3,2,2); ylim([0, 200]);
+% subplot(3,2,3); ylim([-40, 40]);
+% subplot(3,2,4); ylim([-10, 70]);
+% subplot(3,2,5); ylim([-20, 20]);
+% subplot(3,2,6); ylim([0, 50]);
 
 %% functions
 % nonlinear dynamics

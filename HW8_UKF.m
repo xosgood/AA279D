@@ -50,12 +50,12 @@ x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% Lyapunov controller setup
 roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
-N = 10; % exponent in P matrix
-k = 1; % (1/k) factor in front of P matrix
+N = 14; % exponent in P matrix
+k = 6; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
-u_upperbound = 1e-3; % upper bound on control actuation
-dlambda_thresh = 0.1;
-dlambda_dot = 0.001;
+u_upperbound = 1e-2; % upper bound on control actuation
+dlambda_thresh = 0.1 / a_c;
+dlambda_dot = 0.005 / a_c;
 lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
 
 %% UKF setup
@@ -80,7 +80,7 @@ R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
 y = zeros(m_dims_meas, n_iter-1); % measurements (osculating)
-measured_roe = zeros(n_dims_state, n_iter); % the roe values based on measurment.
+measured_roe = zeros(n_dims_state, n_iter-1); % the roe values based on measurment.
 
 u = zeros(p_dims_controlinput, n_iter-1); % control inputs (delta-vs in RTN, will be populated throughout propagation)
 
@@ -132,7 +132,7 @@ for iter = 2:n_iter
     oe_c_osc_mes = ECI2OE(y(1:3,iter-1), y(4:6,iter-1));
     oe_d_osc_mes = ECI2OE(y(7:9,iter-1), y(10:12,iter-1));
 
-    measured_roe(:,iter) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
+    measured_roe(:,iter-1) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
 
     
     
@@ -168,42 +168,53 @@ for iter = 2:n_iter
 end
 
 %% plotting
-
-figure; grid on; hold on;
-title("\delta a vs. time")
-plot(tspan, x_roe(1,:));
-plot(tspan, mu(1,:));
-plot(tspan, measured_roe(1,:));
-legend("state estimate", "ground truth", "measured");
+figure;
+sgtitle("True and Estimated ROEs vs. time")
+subplot(3,2,1); grid on; hold on;
+plot(orbit_span, a_c * x_roe(1,:));
+plot(orbit_span, a_c * mu(1,:));
+plot(orbit_span(2:end), a_c * measured_roe(1,:));
 xlabel("time [s]");
-ylabel("\delta a [km]")
-
-figure; grid on; hold on;
-title("\delta \Omega vs. time")
-plot(tspan, x_roe(2,:));
-plot(tspan, mu(2,:));
-plot(tspan, measured_roe(2,:));
-legend("state estimate", "ground truth", "measured");
+ylabel("a\delta a [km]")
+subplot(3,2,2); grid on; hold on;
+plot(orbit_span, a_c * x_roe(2,:));
+plot(orbit_span, a_c * mu(2,:));
+plot(orbit_span(2:end), a_c * measured_roe(2,:));
+legend("ground truth", "state estimate", "measured", "Location","Best");
 xlabel("time [s]");
-ylabel("\delta \Omega [rad]")
-
-figure; grid on; hold on;
-title("\delta \Omega vs. time")
-plot(tspan, x_roe(2,:));
-plot(tspan, mu(2,:));
-plot(tspan, measured_roe(2,:));
-legend("state estimate", "ground truth", "measured");
+ylabel("a\delta \lambda [km]")
+subplot(3,2,3); grid on; hold on;
+plot(orbit_span, a_c * x_roe(3,:));
+plot(orbit_span, a_c * mu(3,:));
+plot(orbit_span(2:end), a_c * measured_roe(3,:));
 xlabel("time [s]");
-ylabel("\delta \Omega [rad]");
-
-figure; grid on; hold on;
-title("\delta e_x vs. time")
-plot(tspan, x_roe(5,:));
-plot(tspan, mu(5,:));
-plot(tspan, measured_roe(5,:));
-legend("state estimate", "ground truth", "measured");
+ylabel("a\delta e_x [km]")
+subplot(3,2,4); grid on; hold on;
+plot(orbit_span, a_c * x_roe(4,:));
+plot(orbit_span, a_c * mu(4,:));
+plot(orbit_span(2:end), a_c * measured_roe(4,:));
 xlabel("time [s]");
-ylabel("\delta e_x")
+ylabel("a\delta e_y [km]")
+subplot(3,2,5); grid on; hold on;
+plot(orbit_span, a_c * x_roe(5,:));
+plot(orbit_span, a_c * mu(5,:));
+plot(orbit_span(2:end), a_c * measured_roe(5,:));
+xlabel("time [s]");
+ylabel("a\delta i_x [km]")
+subplot(3,2,6); grid on; hold on;
+plot(orbit_span, a_c * x_roe(6,:));
+plot(orbit_span, a_c * mu(6,:));
+plot(orbit_span(2:end), a_c * measured_roe(6,:));
+xlabel("time [s]");
+ylabel("a\delta i_y [km]")
+
+PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
+subplot(3,2,1); ylim([-50, 50]);
+subplot(3,2,2); ylim([0, 200]);
+subplot(3,2,3); ylim([-40, 40]);
+subplot(3,2,4); ylim([-20, 60]);
+subplot(3,2,5); ylim([-20, 20]);
+subplot(3,2,6); ylim([0, 60]);
 
 GraphErrorTerms(tspan, x_roe, mu, Sigma, n_iter);
 

@@ -48,23 +48,9 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 [r_d_osc_0_ECI, v_d_osc_0_ECI] = OE2ECI(oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
-%% Lyapunov controller setup
-roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
-N = 10; % exponent in P matrix
-k = 1; % (1/k) factor in front of P matrix
-u_lowerbound = 1e-6; % lower bound on control actuation
-u_upperbound = 1e-2; % upper bound on control actuation
-dlambda_thresh = 0.1;
-dlambda_dot = 0.001;
-lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
-
-%% UKF setup
-n_dims_state = 6; % number of dimensions of state
-m_dims_meas = 12; % number of dimensions of measurement
-p_dims_controlinput = 3; % number of dimensions of control input
-
-n_orbits = 10;
-n_steps_per_orbit = 300;
+%% sim setup
+n_orbits = 6;
+n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu_E);
 t_f = n_orbits * T;
@@ -72,6 +58,21 @@ tspan = linspace(0, t_f, n_iter);
 dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
+
+%% Lyapunov controller setup
+roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
+N = 14; % exponent in P matrix
+k = 6; % (1/k) factor in front of P matrix
+u_lowerbound = 1e-6; % lower bound on control actuation
+u_upperbound = 1e-2; % upper bound on control actuation
+dlambda_thresh = 0.1 / a_c;
+dlambda_dot = 0.005 / a_c;
+lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
+
+%% UKF setup
+n_dims_state = 6; % number of dimensions of state
+m_dims_meas = 12; % number of dimensions of measurement
+p_dims_controlinput = 3; % number of dimensions of control input
 
 Q = 0.0001 * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
@@ -100,7 +101,7 @@ for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
     % apply control to ground truth
     dx_RTN = [0; 0; 0; u(:,iter-1)];
-    HOW TO FIX IT! TAKE PREV ECI and convert to RTN, then add dv in RTN, then convert back to ECI using prev ECI position
+    %HOW TO FIX IT! TAKE PREV ECI and convert to RTN, then add dv in RTN, then convert back to ECI using prev ECI position
     %{ 
     % old (wrong method of converting to ECI
     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
@@ -128,7 +129,7 @@ for iter = 2:n_iter
     roe_d_mean_cur = OE2ROE(oe_c_mean_cur, oe_d_mean_cur);
     
     % add noise for controller
-    roe_d_mean_cur_noisy = roe_d_mean_cur + w;
+    roe_d_mean_cur_noisy = roe_d_mean_cur% + w;
     
     % measure
     y(:,iter-1) = x_absolute(:,iter) + v;
@@ -213,7 +214,12 @@ xlabel("time [s]");
 ylabel("a\delta i_y [km]")
 
 PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
-
+subplot(3,2,1); ylim([-50, 50]);
+subplot(3,2,2); ylim([0, 200]);
+subplot(3,2,3); ylim([-40, 40]);
+subplot(3,2,4); ylim([-20, 60]);
+subplot(3,2,5); ylim([-20, 20]);
+subplot(3,2,6); ylim([0, 60]);
 
 
 %% functions
@@ -246,43 +252,3 @@ end
 function A = DynamicsJacobian(oe_c_osc, dt)
     A = GenerateSTMJ2(oe_c_osc, dt);
 end
-
-function PlotConfidenceInterval(orbit_span, x, mu, Sigma, a_c)
-    % x is ground truth, mu is state estimate. 
-    % a_c is chief's semi-major axis (for scaling purposes).
-    a = 1.96; % 1.96 std dev is 95% confidence interval
-    
-    x = a_c * x;
-    mu = a_c * mu;
-    Sigma = a_c^2 * Sigma;
-    
-    orbit_span_conf = [orbit_span orbit_span(end:-1:1)];
-    mu_conf = [mu(1,:) + a * sqrt(reshape(Sigma(1,1,:), 1,length(Sigma(1,1,:)))), mu(1,end:-1:1) - a * sqrt(reshape(Sigma(1,1,end:-1:1), 1,length(Sigma(1,1,end:-1:1))));
-               mu(2,:) + a * sqrt(reshape(Sigma(2,2,:), 1,length(Sigma(2,2,:)))), mu(2,end:-1:1) - a * sqrt(reshape(Sigma(2,2,end:-1:1), 1,length(Sigma(2,2,end:-1:1))));
-               mu(3,:) + a * sqrt(reshape(Sigma(3,3,:), 1,length(Sigma(3,3,:)))), mu(3,end:-1:1) - a * sqrt(reshape(Sigma(3,3,end:-1:1), 1,length(Sigma(3,3,end:-1:1))));
-               mu(4,:) + a * sqrt(reshape(Sigma(4,4,:), 1,length(Sigma(4,4,:)))), mu(4,end:-1:1) - a * sqrt(reshape(Sigma(4,4,end:-1:1), 1,length(Sigma(4,4,end:-1:1))));
-               mu(5,:) + a * sqrt(reshape(Sigma(5,5,:), 1,length(Sigma(5,5,:)))), mu(5,end:-1:1) - a * sqrt(reshape(Sigma(5,5,end:-1:1), 1,length(Sigma(5,5,end:-1:1))));
-               mu(6,:) + a * sqrt(reshape(Sigma(6,6,:), 1,length(Sigma(6,6,:)))), mu(6,end:-1:1) - a * sqrt(reshape(Sigma(6,6,end:-1:1), 1,length(Sigma(6,6,end:-1:1))))];
-
-    figure; grid on; hold on;
-    sgtitle("Estimation error vs. time");
-    ylabels = ["a\delta a [km]", "a\delta \lambda [km]", "a\delta e_x [km]", "a\delta e_y [km]", "a\delta i_x [km]", "a\delta i_y [km]"];
-    
-    for i = 1:6
-        subplot(3,2,i);
-        grid on; hold on;
-        plot(orbit_span, x(i,:));
-        plot(orbit_span, mu(i,:));
-        
-        p = fill(orbit_span_conf, mu_conf(i,:), 'm');
-        p.FaceAlpha = 0.25;
-        p.EdgeColor = 'none';
-        
-        xlabel("orbits");
-        ylabel(ylabels(i));
-    end
-    
-    subplot(3,2,2);
-    legend("True", "Estimated", "95% confidence interval");
-end
-

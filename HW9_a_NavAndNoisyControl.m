@@ -9,7 +9,7 @@ rng(273);
 
 %% relative motion setup
 % constants
-mu = 3.986e5;
+mu_E = 3.986e5;
 
 %%% initialize chief
 % chief mean OE
@@ -21,7 +21,7 @@ omega_c = deg2rad(90);
 nu_c = deg2rad(-15);
 M_c = TrueToMeanAnomaly(nu_c, e_c);
 oe_c_mean = [a_c; e_c; i_c; RAAN_c; omega_c; nu_c];
-n_c = sqrt(mu / a_c^3);
+n_c = sqrt(mu_E / a_c^3);
 % chief osculating OE
 oe_c_osc = mean2osc(oe_c_mean, 1);
 % get chief initial state for ode113
@@ -53,7 +53,7 @@ roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
 N = 10; % exponent in P matrix
 k = 1; % (1/k) factor in front of P matrix
 u_lowerbound = 1e-6; % lower bound on control actuation
-u_upperbound = 1e-3; % upper bound on control actuation
+u_upperbound = 1e-2; % upper bound on control actuation
 dlambda_thresh = 0.1;
 dlambda_dot = 0.001;
 lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
@@ -64,22 +64,22 @@ m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
 n_orbits = 10;
-n_steps_per_orbit = 30;
+n_steps_per_orbit = 300;
 n_iter = n_steps_per_orbit * n_orbits;
-T = 2 * pi * sqrt(a_c^3 / mu);
+T = 2 * pi * sqrt(a_c^3 / mu_E);
 t_f = n_orbits * T;
 tspan = linspace(0, t_f, n_iter);
 dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.000001 * eye(n_dims_state);
+Q = 0.0001 * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
 y = zeros(m_dims_meas, n_iter-1); % measurements (osculating)
-measured_roe = zeros(n_dims_state, n_iter); % the roe values based on measurment.
+measured_roe = zeros(n_dims_state, n_iter-1); % the roe values based on measurment.
 
 u = zeros(p_dims_controlinput, n_iter-1); % control inputs (delta-vs in RTN, will be populated throughout propagation)
 
@@ -90,8 +90,199 @@ x_absolute(:,1) = [x_c_osc_0(:); x_d_osc_0(:)]; % initial truth state
 x_roe(:,1) = roe_d_osc(:); % initial truth state
 
 mu_0 = zeros(n_dims_state, 1); % initial state estimate
-Sigma_0 = 0.1 * eye(n_dims_state); % initial covariance estimate
+Sigma_0 = 0.01 * eye(n_dims_state); % initial covariance estimate
 
 Sigma(:,:,1) = Sigma_0;
 mu(:,1) = mu_0;
+
+
+for iter = 2:n_iter
+    %%% ground truth (in ECI) propagation
+    % apply control to ground truth
+    dx_RTN = [0; 0; 0; u(:,iter-1)];
+    HOW TO FIX IT! TAKE PREV ECI and convert to RTN, then add dv in RTN, then convert back to ECI using prev ECI position
+    %{ 
+    % old (wrong method of converting to ECI
+    x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
+    dv_ECI = x_and_dv_ECI(4:6);
+    x_absolute(7:9,iter) = x_absolute(7:9,iter-1);
+    x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
+    %}
+    x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
+    
+    w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise (currently only used for input to controller)
+    v = mvnrnd(zeros(m_dims_meas, 1), R)'; % measurement noise
+    
+    [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(iter-1:iter), x_absolute(1:6,iter-1), options);
+    [~, x_d_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(iter-1:iter), x_absolute(7:12,iter), options);
+    x_absolute(1:6,iter) = x_c_ECI(end,:);
+    x_absolute(7:12,iter) = x_d_ECI(end,:);
+    
+    oe_c_osc_cur = ECI2OE(x_absolute(1:3,iter), x_absolute(4:6,iter));
+    oe_d_osc_cur = ECI2OE(x_absolute(7:9,iter), x_absolute(10:12,iter));
+    
+    x_roe(:,iter) = OE2ROE(oe_c_osc_cur, oe_d_osc_cur);
+    
+    oe_c_mean_cur = osc2mean(oe_c_osc_cur, 1);
+    oe_d_mean_cur = osc2mean(oe_d_osc_cur, 1);
+    roe_d_mean_cur = OE2ROE(oe_c_mean_cur, oe_d_mean_cur);
+    
+    % add noise for controller
+    roe_d_mean_cur_noisy = roe_d_mean_cur + w;
+    
+    % measure
+    y(:,iter-1) = x_absolute(:,iter) + v;
+
+    oe_c_osc_mes = ECI2OE(y(1:3,iter-1), y(4:6,iter-1));
+    oe_d_osc_mes = ECI2OE(y(7:9,iter-1), y(10:12,iter-1));
+
+    measured_roe(:,iter-1) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
+
+    
+    
+    %%% UKF
+    % predict (regular KF style, since our dynamics are linear)
+    A = DynamicsJacobian(oe_c_osc_cur, dt); % Jacobian for dynamics
+    mu(:,iter) = f(mu(:,iter-1), u(:,iter-1), oe_c_osc_cur, dt); % mean predict
+    Sigma(:,:,iter) = A * Sigma(:,:,iter-1) * A' + Q; % covariance predict
+    %{
+    % predict (UKF style)
+    [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
+    for j = 1:size(points, 2) % loop through sigma-points
+        points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
+    end
+    [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
+    Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
+    %}
+    % update
+    [points, weights] = UT(mu(:,iter), Sigma(:,:,iter)); % update sigma-points using predicted mean and covariance
+    y_preds = zeros(m_dims_meas, size(points, 2)); % create vector to hold predicted measurements at each sigma-point
+    for j = 1:size(points, 2) % loop through sigma-points and measure
+        y_preds(:,j) = g(points(:,j), oe_c_osc_cur); % predicted measurements at each sigma point
+    end
+    [y_hat, Sigma_yy] = UTInverse(y_preds, weights); % get expected measurement and expected measurement covariance
+    Sigma_yy = Sigma_yy + R; % add measurement noise to covariance
+    Sigma_xy = (weights .* (points - mu(:,iter))) * (y_preds - y_hat)'; % cross covariance between sigma-points and predicted measurements
+    K = Sigma_xy / Sigma_yy; % "Kalman gain"
+    mu(:,iter) = mu(:,iter) + K * (y(:,iter-1) - y_hat); % mean update
+    Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
+    
+    %%% compute control for next timestep to use
+    u(:,iter) = LyapunovController(roe_d_mean_cur_noisy, roe_desired, oe_c_mean_cur, lyap_params);
+end
+
+%% plotting
+figure;
+sgtitle("True and Estimated ROEs vs. time")
+subplot(3,2,1); grid on; hold on;
+plot(orbit_span, a_c * x_roe(1,:));
+plot(orbit_span, a_c * mu(1,:));
+plot(orbit_span(2:end), a_c * measured_roe(1,:));
+xlabel("time [s]");
+ylabel("a\delta a [km]")
+subplot(3,2,2); grid on; hold on;
+plot(orbit_span, a_c * x_roe(2,:));
+plot(orbit_span, a_c * mu(2,:));
+plot(orbit_span(2:end), a_c * measured_roe(2,:));
+legend("ground truth", "state estimate", "measured", "Location","Best");
+xlabel("time [s]");
+ylabel("a\delta \lambda [km]")
+subplot(3,2,3); grid on; hold on;
+plot(orbit_span, a_c * x_roe(3,:));
+plot(orbit_span, a_c * mu(3,:));
+plot(orbit_span(2:end), a_c * measured_roe(3,:));
+xlabel("time [s]");
+ylabel("a\delta e_x [km]")
+subplot(3,2,4); grid on; hold on;
+plot(orbit_span, a_c * x_roe(4,:));
+plot(orbit_span, a_c * mu(4,:));
+plot(orbit_span(2:end), a_c * measured_roe(4,:));
+xlabel("time [s]");
+ylabel("a\delta e_y [km]")
+subplot(3,2,5); grid on; hold on;
+plot(orbit_span, a_c * x_roe(5,:));
+plot(orbit_span, a_c * mu(5,:));
+plot(orbit_span(2:end), a_c * measured_roe(5,:));
+xlabel("time [s]");
+ylabel("a\delta i_x [km]")
+subplot(3,2,6); grid on; hold on;
+plot(orbit_span, a_c * x_roe(6,:));
+plot(orbit_span, a_c * mu(6,:));
+plot(orbit_span(2:end), a_c * measured_roe(6,:));
+xlabel("time [s]");
+ylabel("a\delta i_y [km]")
+
+PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
+
+
+
+%% functions
+% nonlinear dynamics
+function x_new = f(x_old, u, oe_c_osc, dt)
+    B = GenerateBControlsMatrix(osc2mean(oe_c_osc,1));
+
+    oe_c_mean = osc2mean(oe_c_osc, 1);
+    oe_d_osc = ROE2OE(oe_c_osc, x_old);
+    oe_d_mean = osc2mean(oe_d_osc, 1);
+    roe_d_mean = OE2ROE(oe_c_mean, oe_d_mean);
+    
+    A = DynamicsJacobian(oe_c_osc, dt);
+    x_new = A * roe_d_mean + B * u;
+end
+
+
+% nonlinear measurement function
+function y = g(x, oe_c_osc)
+    % map roe of deputy and oe of chief to ECI of chief and deputy.
+    % x is roe of deputy.
+    oe_d_osc = ROE2OE(oe_c_osc, x);
+    [r_c_ECI, v_c_ECI] = OE2ECI(oe_c_osc);
+    [r_d_ECI, v_d_ECI] = OE2ECI(oe_d_osc);
+
+    y = [r_c_ECI; v_c_ECI; r_d_ECI; v_d_ECI];
+end
+
+% generate Jacobian for dynamics
+function A = DynamicsJacobian(oe_c_osc, dt)
+    A = GenerateSTMJ2(oe_c_osc, dt);
+end
+
+function PlotConfidenceInterval(orbit_span, x, mu, Sigma, a_c)
+    % x is ground truth, mu is state estimate. 
+    % a_c is chief's semi-major axis (for scaling purposes).
+    a = 1.96; % 1.96 std dev is 95% confidence interval
+    
+    x = a_c * x;
+    mu = a_c * mu;
+    Sigma = a_c^2 * Sigma;
+    
+    orbit_span_conf = [orbit_span orbit_span(end:-1:1)];
+    mu_conf = [mu(1,:) + a * sqrt(reshape(Sigma(1,1,:), 1,length(Sigma(1,1,:)))), mu(1,end:-1:1) - a * sqrt(reshape(Sigma(1,1,end:-1:1), 1,length(Sigma(1,1,end:-1:1))));
+               mu(2,:) + a * sqrt(reshape(Sigma(2,2,:), 1,length(Sigma(2,2,:)))), mu(2,end:-1:1) - a * sqrt(reshape(Sigma(2,2,end:-1:1), 1,length(Sigma(2,2,end:-1:1))));
+               mu(3,:) + a * sqrt(reshape(Sigma(3,3,:), 1,length(Sigma(3,3,:)))), mu(3,end:-1:1) - a * sqrt(reshape(Sigma(3,3,end:-1:1), 1,length(Sigma(3,3,end:-1:1))));
+               mu(4,:) + a * sqrt(reshape(Sigma(4,4,:), 1,length(Sigma(4,4,:)))), mu(4,end:-1:1) - a * sqrt(reshape(Sigma(4,4,end:-1:1), 1,length(Sigma(4,4,end:-1:1))));
+               mu(5,:) + a * sqrt(reshape(Sigma(5,5,:), 1,length(Sigma(5,5,:)))), mu(5,end:-1:1) - a * sqrt(reshape(Sigma(5,5,end:-1:1), 1,length(Sigma(5,5,end:-1:1))));
+               mu(6,:) + a * sqrt(reshape(Sigma(6,6,:), 1,length(Sigma(6,6,:)))), mu(6,end:-1:1) - a * sqrt(reshape(Sigma(6,6,end:-1:1), 1,length(Sigma(6,6,end:-1:1))))];
+
+    figure; grid on; hold on;
+    sgtitle("Estimation error vs. time");
+    ylabels = ["a\delta a [km]", "a\delta \lambda [km]", "a\delta e_x [km]", "a\delta e_y [km]", "a\delta i_x [km]", "a\delta i_y [km]"];
+    
+    for i = 1:6
+        subplot(3,2,i);
+        grid on; hold on;
+        plot(orbit_span, x(i,:));
+        plot(orbit_span, mu(i,:));
+        
+        p = fill(orbit_span_conf, mu_conf(i,:), 'm');
+        p.FaceAlpha = 0.25;
+        p.EdgeColor = 'none';
+        
+        xlabel("orbits");
+        ylabel(ylabels(i));
+    end
+    
+    subplot(3,2,2);
+    legend("True", "Estimated", "95% confidence interval");
+end
 

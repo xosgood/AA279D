@@ -13,8 +13,11 @@ function u = LyapunovController(roe, roe_des, oe_c, params)
     Delta_roe = roe - roe_des;
     if abs(Delta_roe(2)) >= dlambda_thresh
         % impose a desired da to cause a desired drift in dlambda
+        mu_E = 3.986e5;
+        a_c = oe_c(1);
+        n_c = sqrt(mu_E / a_c^3);
         da_des = -2/3 * sign(-Delta_roe(2)) * dlambda_dot / n_c;
-        Delta_roe(1) = roe(1,iter) - da_des;
+        Delta_roe(1) = roe(1) - da_des;
     end
     Delta_roe_reducedmodel = [Delta_roe(1); Delta_roe(3:6)];
     roe_d_mean_reducedmodel = [roe(1); roe(3:6)];

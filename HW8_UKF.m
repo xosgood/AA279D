@@ -64,7 +64,7 @@ n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-n_orbits = 10;
+n_orbits = 2;
 n_steps_per_orbit = 30;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);

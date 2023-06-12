@@ -57,13 +57,14 @@ lyap_params.u_upperbound = 1e-2; % upper bound on control actuation
 lyap_params.dlambda_thresh = 0.1 / a_c;
 lyap_params.dlambda_dot = 0.005 / a_c;
 
+
 %% UKF setup
 
 n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-n_orbits = 2;
+n_orbits = 10;
 n_steps_per_orbit = 30;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -73,13 +74,13 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = (0.02 / a_c) * eye(n_dims_state);
+Q = 0.000001 * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
 y = zeros(m_dims_meas, n_iter-1); % measurements (osculating)
-measured_roe = zeros(n_dims_state, n_iter-1); % the roe values based on measurment.
+measured_roe = zeros(n_dims_state, n_iter); % the roe values based on measurment.
 
 u = zeros(p_dims_controlinput, n_iter-1); % control inputs (delta-vs in RTN, will be populated throughout propagation)
 
@@ -90,7 +91,9 @@ x_absolute(:,1) = [x_c_osc_0(:); x_d_osc_0(:)]; % initial truth state
 x_roe(:,1) = roe_d_osc(:); % initial truth state
 
 mu_0 = zeros(n_dims_state, 1); % initial state estimate
-Sigma_0 = 0.1 * eye(n_dims_state); % initial covariance estimate
+Sigma_0 = 0.01 * eye(n_dims_state); % initial covariance estimate
+pre_fit_res = zeros(m_dims_meas, n_iter); % pre fit residual
+post_fit_res = zeros(m_dims_meas, n_iter); % post fit residual
 
 Sigma(:,:,1) = Sigma_0;
 mu(:,1) = mu_0;
@@ -100,12 +103,9 @@ for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
     % apply control to ground truth
     dx_RTN = [0; 0; 0; u(:,iter-1)];
-    %{
-    % old (wrong method of converting to ECI
-    x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
-    dv_ECI = x_and_dv_ECI(4:6);
-    x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
-    %}
+%     x_and_dv_ECI = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
+%     dv_ECI = x_and_dv_ECI(4:6);
+%     x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
     x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
     
     %w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise
@@ -131,7 +131,7 @@ for iter = 2:n_iter
     oe_c_osc_mes = ECI2OE(y(1:3,iter-1), y(4:6,iter-1));
     oe_d_osc_mes = ECI2OE(y(7:9,iter-1), y(10:12,iter-1));
 
-    measured_roe(:,iter-1) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
+    measured_roe(:,iter) = OE2ROE(oe_c_osc_mes, oe_d_osc_mes);
 
     
     
@@ -140,15 +140,13 @@ for iter = 2:n_iter
     A = DynamicsJacobian(oe_c_osc_cur, dt); % Jacobian for dynamics
     mu(:,iter) = f(mu(:,iter-1), u(:,iter-1), oe_c_osc_cur, dt); % mean predict
     Sigma(:,:,iter) = A * Sigma(:,:,iter-1) * A' + Q; % covariance predict
-    %{
-    % predict (UKF style)
-    [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
-    for j = 1:size(points, 2) % loop through sigma-points
-        points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
-    end
-    [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
-    Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
-    %}
+%     % predict (UKF style)
+%     [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
+%     for j = 1:size(points, 2) % loop through sigma-points
+%         points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
+%     end
+%     [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
+%     Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
     % update
     [points, weights] = UT(mu(:,iter), Sigma(:,:,iter)); % update sigma-points using predicted mean and covariance
     y_preds = zeros(m_dims_meas, size(points, 2)); % create vector to hold predicted measurements at each sigma-point
@@ -159,13 +157,18 @@ for iter = 2:n_iter
     Sigma_yy = Sigma_yy + R; % add measurement noise to covariance
     Sigma_xy = (weights .* (points - mu(:,iter))) * (y_preds - y_hat)'; % cross covariance between sigma-points and predicted measurements
     K = Sigma_xy / Sigma_yy; % "Kalman gain"
+
+    pre_fit_res(:,iter) = (y(:,iter-1) - y_hat);
+
     mu(:,iter) = mu(:,iter) + K * (y(:,iter-1) - y_hat); % mean update
     Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
-    residual_post = y(:,iter-1) - g(mu(:,iter));
+
+    post_fit_res(:,iter) = y(:,iter-1) - g(mu(:,iter), oe_c_osc_cur);
     
     %%% compute control for next timestep to use
     u(:,iter) = LyapunovController(roe_d_mean_cur, roe_desired, oe_c_mean_cur, lyap_params);
 end
+
 
 %% plotting
 figure;
@@ -173,51 +176,79 @@ sgtitle("True and Estimated ROEs vs. time")
 subplot(3,2,1); grid on; hold on;
 plot(orbit_span, a_c * x_roe(1,:));
 plot(orbit_span, a_c * mu(1,:));
-plot(orbit_span(2:end), a_c * measured_roe(1,:));
+plot(orbit_span(1:end), a_c * measured_roe(1,:));
+
 xlabel("time [s]");
 ylabel("a\delta a [km]")
 subplot(3,2,2); grid on; hold on;
 plot(orbit_span, a_c * x_roe(2,:));
 plot(orbit_span, a_c * mu(2,:));
-plot(orbit_span(2:end), a_c * measured_roe(2,:));
+plot(orbit_span(1:end), a_c * measured_roe(2,:));
 legend("ground truth", "state estimate", "measured", "Location","Best");
 xlabel("time [s]");
 ylabel("a\delta \lambda [km]")
 subplot(3,2,3); grid on; hold on;
 plot(orbit_span, a_c * x_roe(3,:));
 plot(orbit_span, a_c * mu(3,:));
-plot(orbit_span(2:end), a_c * measured_roe(3,:));
+plot(orbit_span(1:end), a_c * measured_roe(3,:));
 xlabel("time [s]");
 ylabel("a\delta e_x [km]")
 subplot(3,2,4); grid on; hold on;
 plot(orbit_span, a_c * x_roe(4,:));
 plot(orbit_span, a_c * mu(4,:));
-plot(orbit_span(2:end), a_c * measured_roe(4,:));
+plot(orbit_span(1:end), a_c * measured_roe(4,:));
 xlabel("time [s]");
 ylabel("a\delta e_y [km]")
 subplot(3,2,5); grid on; hold on;
 plot(orbit_span, a_c * x_roe(5,:));
 plot(orbit_span, a_c * mu(5,:));
-plot(orbit_span(2:end), a_c * measured_roe(5,:));
+plot(orbit_span(1:end), a_c * measured_roe(5,:));
 xlabel("time [s]");
 ylabel("a\delta i_x [km]")
 subplot(3,2,6); grid on; hold on;
 plot(orbit_span, a_c * x_roe(6,:));
 plot(orbit_span, a_c * mu(6,:));
-plot(orbit_span(2:end), a_c * measured_roe(6,:));
+plot(orbit_span(1:end), a_c * measured_roe(6,:));
 xlabel("time [s]");
 ylabel("a\delta i_y [km]")
 
 PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
-subplot(3,2,1); ylim([-50, 50]);
+subplot(3,2,1); ylim([-70, 70]);
+subplot(3,2,2); ylim([-500, 800]);
+subplot(3,2,3); ylim([-60, 60]);
+subplot(3,2,4); ylim([-20, 100]);
+subplot(3,2,5); ylim([-40, 60]);
+subplot(3,2,6); ylim([-20, 80]);
+subplot(3,2,1); ylim([-40, 50]);
 subplot(3,2,2); ylim([0, 200]);
 subplot(3,2,3); ylim([-40, 40]);
-subplot(3,2,4); ylim([-20, 60]);
+subplot(3,2,4); ylim([-10, 70]);
 subplot(3,2,5); ylim([-20, 20]);
-subplot(3,2,6); ylim([0, 60]);
+subplot(3,2,6); ylim([0, 50]);
 
-GraphErrorTerms(tspan, x_roe, mu, Sigma, n_iter);
+position_confidence_interval = 1.96 * reshape(sqrt(Sigma(1,1,:) + Sigma(2,2,:) + Sigma(3,3,:)),[1,300]);
+velocity_confidence_interval = 1.96 * reshape(sqrt(Sigma(4,4,:) + Sigma(5,5,:) + Sigma(6,6,:)), [1,300]);
 
+figure; 
+sgtitle("Pre and Post fit residuals verus time")
+subplot(2, 1, 1); hold on; grid on;
+plot(orbit_span, vecnorm(pre_fit_res(7:9,:)), ".");
+plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
+plot(orbit_span, position_confidence_interval);
+legend("Pre fit residual", "Post fit residual");
+xlabel("time [s]")
+ylabel("norm residual [km]")
+ylim([-5, 15]);
+
+subplot(2, 1, 2); hold on; grid on;
+plot(orbit_span, vecnorm(pre_fit_res(10:12,:)), ".");
+plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
+
+legend("Pre fit residual", "Post fit residual");
+ylim([-5, 15]);
+xlabel("time [s]")
+ylabel("norm residual [km/s]")
+ylim([-0.01, 0.05]);
 
 
 

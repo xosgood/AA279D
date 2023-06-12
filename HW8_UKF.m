@@ -64,7 +64,7 @@ n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-n_orbits = 5;
+n_orbits = 15;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
@@ -171,6 +171,10 @@ end
 err = abs(mu - x_roe);
 err_avg_ss = mean(err(:,end-n_steps_per_orbit:end), 2);
 stddev_ss = std(err(:,end-n_steps_per_orbit:end), 0, 2);
+<<<<<<< Updated upstream
+=======
+
+>>>>>>> Stashed changes
 
 %% plotting
 figure;

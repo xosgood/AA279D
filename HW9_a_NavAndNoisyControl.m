@@ -49,7 +49,7 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% sim setup
-n_orbits = 5;
+n_orbits = 15;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu_E);
@@ -61,20 +61,19 @@ options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
 %% Lyapunov controller setup
 roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
-N = 14; % exponent in P matrix
-k = 6; % (1/k) factor in front of P matrix
-u_lowerbound = 1e-6; % lower bound on control actuation
-u_upperbound = 1e-2; % upper bound on control actuation
-dlambda_thresh = 0.1 / a_c;
-dlambda_dot = 0.005 / a_c;
-lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
+lyap_params.N = 14; % exponent in P matrix
+lyap_params.k = 6; % (1/k) factor in front of P matrix
+lyap_params.u_lowerbound = 1e-6; % lower bound on control actuation
+lyap_params.u_upperbound = 1e-2; % upper bound on control actuation
+lyap_params.dlambda_thresh = 0.1 / a_c;
+lyap_params.dlambda_dot = 0.005 / a_c;
 
 %% UKF setup
 n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-Q = 0.0001 * eye(n_dims_state);
+Q = (0.02 / a_c) * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
@@ -138,15 +137,6 @@ for iter = 2:n_iter
     A = DynamicsJacobian(oe_c_osc_cur, dt); % Jacobian for dynamics
     mu(:,iter) = f(mu(:,iter-1), u(:,iter-1), oe_c_osc_cur, dt); % mean predict
     Sigma(:,:,iter) = A * Sigma(:,:,iter-1) * A' + Q; % covariance predict
-    %{
-    % predict (UKF style)
-    [points, weights] = UT(mu(:,i-1), Sigma(:,:,i-1));
-    for j = 1:size(points, 2) % loop through sigma-points
-        points(:,j) = f(points(:,j), u(:,i-1), dt); % propagate points through nonlinear dynamics
-    end
-    [mu(:,i), Sigma(:,:,i)] = UTInverse(points, weights); % get predicted mean and covariance
-    Sigma(:,:,i) = Sigma(:,:,i) + Q; % add process noise to covariance
-    %}
     % update
     [points, weights] = UT(mu(:,iter), Sigma(:,:,iter)); % update sigma-points using predicted mean and covariance
     y_preds = zeros(m_dims_meas, size(points, 2)); % create vector to hold predicted measurements at each sigma-point
@@ -212,12 +202,12 @@ subplot(3,2,3); ylim([-60, 60]);
 subplot(3,2,4); ylim([-20, 100]);
 subplot(3,2,5); ylim([-40, 60]);
 subplot(3,2,6); ylim([-20, 80]);
-% subplot(3,2,1); ylim([-40, 50]);
-% subplot(3,2,2); ylim([0, 200]);
-% subplot(3,2,3); ylim([-40, 40]);
-% subplot(3,2,4); ylim([-10, 70]);
-% subplot(3,2,5); ylim([-20, 20]);
-% subplot(3,2,6); ylim([0, 50]);
+subplot(3,2,1); ylim([-40, 50]);
+subplot(3,2,2); ylim([0, 200]);
+subplot(3,2,3); ylim([-40, 40]);
+subplot(3,2,4); ylim([-10, 70]);
+subplot(3,2,5); ylim([-20, 20]);
+subplot(3,2,6); ylim([0, 50]);
 
 %% functions
 % nonlinear dynamics

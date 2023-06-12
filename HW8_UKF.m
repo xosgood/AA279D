@@ -50,13 +50,12 @@ x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% Lyapunov controller setup
 roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
-N = 14; % exponent in P matrix
-k = 6; % (1/k) factor in front of P matrix
-u_lowerbound = 1e-6; % lower bound on control actuation
-u_upperbound = 1e-2; % upper bound on control actuation
-dlambda_thresh = 0.1 / a_c;
-dlambda_dot = 0.005 / a_c;
-lyap_params = [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot];
+lyap_params.N = 14; % exponent in P matrix
+lyap_params.k = 6; % (1/k) factor in front of P matrix
+lyap_params.u_lowerbound = 1e-6; % lower bound on control actuation
+lyap_params.u_upperbound = 1e-2; % upper bound on control actuation
+lyap_params.dlambda_thresh = 0.1 / a_c;
+lyap_params.dlambda_dot = 0.005 / a_c;
 
 %% UKF setup
 
@@ -74,7 +73,7 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.0001 * eye(n_dims_state);
+Q = (0.02 / a_c) * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics

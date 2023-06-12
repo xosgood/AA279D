@@ -35,6 +35,8 @@ function P = P_Control_ReducedModel(oe_c, Delta_roe_reducedmodel, N, k)
     IP_entry = cos(J)^N;
     OOP_entry = cos(H)^N;
     
-    P = (1/k) * diag([IP_entry, IP_entry, IP_entry, OOP_entry, OOP_entry]);
+    k = k(:);
+    
+    P = diag((1./k) .* [IP_entry; IP_entry; IP_entry; OOP_entry; OOP_entry]);
 end
 

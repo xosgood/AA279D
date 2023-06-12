@@ -3,12 +3,12 @@ function u = LyapunovController(roe, roe_des, oe_c, params)
     % Returns u
     
     % unpack parameters: [N, k, u_lowerbound, u_upperbound, dlambda_thresh, dlambda_dot] = params;
-    N = params(1);
-    k = params(2);
-    u_lowerbound = params(3);
-    u_upperbound = params(4);
-    dlambda_thresh = params(5);
-    dlambda_dot = params(6);
+    N = params.N;
+    k = params.k;
+    u_lowerbound = params.u_lowerbound;
+    u_upperbound = params.u_upperbound;
+    dlambda_thresh = params.dlambda_thresh;
+    dlambda_dot = params.dlambda_dot;
     
     Delta_roe = roe - roe_des;
     if abs(Delta_roe(2)) >= dlambda_thresh

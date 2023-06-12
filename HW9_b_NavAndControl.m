@@ -165,7 +165,12 @@ for iter = 2:n_iter
     u(:,iter) = LyapunovController(mu_cur_movingavg, roe_desired, oe_c_mean_cur, lyap_params);
 end
 
+err = abs(mu - x_roe);
+err_avg_ss = mean(err(:,end-n_steps_per_orbit:end), 2);
+stddev_ss = std(err(:,end-n_steps_per_orbit:end), 0, 2);
+
 %% plotting
+% plot true, estimated, and measured state
 figure;
 sgtitle("True and Estimated ROEs vs. time")
 subplot(3,2,1); grid on; hold on;
@@ -206,6 +211,7 @@ plot(orbit_span(2:end), a_c * measured_roe(6,:));
 xlabel("time [s]");
 ylabel("a \delta i_y [km]")
 
+% plot true and estimated state with confidence interval
 PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
 % subplot(3,2,1); ylim([-70, 70]);
 % subplot(3,2,2); ylim([-500, 800]);
@@ -230,15 +236,81 @@ legend("Pre fit residual", "Post fit residual");
 xlabel("orbits")
 ylabel("norm residual [km]")
 ylim([-5, 20]);
-
 subplot(2, 1, 2); hold on; grid on;
 plot(orbit_span, vecnorm(pre_fit_res(10:12,:)), "o");
 plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
-
 legend("Pre fit residual", "Post fit residual");
 xlabel("orbits")
 ylabel("norm residual [km/s]")
 ylim([-0.01, 0.05]);
+
+% plot state estimate error with covariance
+figure;
+sgtitle("UKF Error");
+subplot(3,2,1); grid on; hold on;
+plot(orbit_span, a_c * err(1,:));
+xlabel("orbits");
+ylabel("a \delta a error [km]");
+ylim([0, 10]);
+subplot(3,2,2); grid on; hold on;
+plot(orbit_span, a_c * err(2,:));
+xlabel("orbits");
+ylabel("a \delta \lambda error [km]");
+ylim([0, 10]);
+subplot(3,2,3); grid on; hold on;
+plot(orbit_span, a_c * err(3,:));
+xlabel("orbits");
+ylabel("a \delta e_x error [km]");
+ylim([0, 10]);
+subplot(3,2,4); grid on; hold on;
+plot(orbit_span, a_c * err(4,:));
+xlabel("orbits");
+ylabel("a \delta e_y error [km]");
+ylim([0, 10]);
+subplot(3,2,5); grid on; hold on;
+plot(orbit_span, a_c * err(5,:));
+xlabel("orbits");
+ylabel("a \delta i_x error [km]");
+ylim([0, 5]);
+subplot(3,2,6); grid on; hold on;
+plot(orbit_span, a_c * err(6,:));
+xlabel("orbits");
+ylabel("a \delta i_y error [km]");
+ylim([0, 5]);
+
+% plot control input history
+figure;
+sgtitle("Delta-v components vs number of orbits passed");
+subplot(3,1,1);
+plot(orbit_span, 1000 * u(2,:));
+grid on;
+xlabel("orbits");
+ylabel("tangential delta-v (m/s)");
+subplot(3,1,2);
+plot(orbit_span, 1000 * u(3,:));
+grid on;
+xlabel("orbits");
+ylabel("normal delta-v (m/s)");
+subplot(3,1,3);
+plot(orbit_span, 1000 * vecnorm(u));
+grid on;
+xlabel("orbits");
+ylabel("magnitude of delta-v (m/s)");
+
+% plot cumulative delta-v
+figure;
+subplot(2,1,1);
+plot(orbit_span, 1000 * delta_v_cum_series);
+grid on;
+xlabel("number of orbits");
+ylabel("delta-v (m/s)");
+subplot(2,1,2);
+plot(orbit_span, 1000 * delta_v_cum_series);
+xlim([0, 3]);
+grid on;
+sgtitle("Cumulative delta-v vs number of orbits passed");
+xlabel("number of orbits");
+ylabel("delta-v (m/s)");
 
 %% functions
 % nonlinear dynamics

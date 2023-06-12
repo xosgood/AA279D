@@ -223,7 +223,7 @@ subplot(2, 1, 1); hold on; grid on;
 plot(orbit_span, vecnorm(pre_fit_res(7:9,:)), "o");
 plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
 legend("Pre fit residual", "Post fit residual");
-xlabel("time [s]")
+xlabel("orbits")
 ylabel("norm residual [km]")
 ylim([-5, 20]);
 
@@ -232,7 +232,7 @@ plot(orbit_span, vecnorm(pre_fit_res(10:12,:)), "o");
 plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
 
 legend("Pre fit residual", "Post fit residual");
-xlabel("time [s]")
+xlabel("orbits")
 ylabel("norm residual [km/s]")
 ylim([-0.01, 0.05]);
 

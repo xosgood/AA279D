@@ -64,8 +64,8 @@ n_dims_state = 6; % number of dimensions of state
 m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
-n_orbits = 10;
-n_steps_per_orbit = 30;
+n_orbits = 5;
+n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu);
 t_f = n_orbits * T;
@@ -74,7 +74,7 @@ dt = tspan(2) - tspan(1);
 orbit_span = (1:n_iter)/n_steps_per_orbit;
 options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 
-Q = 0.000001 * eye(n_dims_state);
+Q = (0.02 / a_c) * eye(n_dims_state);
 R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
@@ -108,7 +108,6 @@ for iter = 2:n_iter
 %     x_absolute(10:12,iter) = x_absolute(10:12,iter-1) + dv_ECI;
     x_absolute(7:12,iter) = RTN2ECI(x_absolute(7:12,iter-1), dx_RTN);
     
-    %w = mvnrnd(zeros(n_dims_state, 1), Q)'; % process noise
     v = mvnrnd(zeros(m_dims_meas, 1), R)'; % measurement noise
     
     [~, x_c_ECI] = ode113(@AbsoluteOrbitWithJ2DiffEq, tspan(iter-1:iter), x_absolute(1:6,iter-1), options);
@@ -226,8 +225,8 @@ subplot(3,2,4); ylim([-10, 70]);
 subplot(3,2,5); ylim([-20, 20]);
 subplot(3,2,6); ylim([0, 50]);
 
-position_confidence_interval = 1.96 * reshape(sqrt(Sigma(1,1,:) + Sigma(2,2,:) + Sigma(3,3,:)),[1,300]);
-velocity_confidence_interval = 1.96 * reshape(sqrt(Sigma(4,4,:) + Sigma(5,5,:) + Sigma(6,6,:)), [1,300]);
+position_confidence_interval = 1.96 * reshape(sqrt(Sigma(1,1,:) + Sigma(2,2,:) + Sigma(3,3,:)),[1,n_iter]);
+velocity_confidence_interval = 1.96 * reshape(sqrt(Sigma(4,4,:) + Sigma(5,5,:) + Sigma(6,6,:)), [1,n_iter]);
 
 figure; 
 sgtitle("Pre and Post fit residuals verus time")
@@ -235,7 +234,7 @@ subplot(2, 1, 1); hold on; grid on;
 plot(orbit_span, vecnorm(pre_fit_res(7:9,:)), ".");
 plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
 legend("Pre fit residual", "Post fit residual");
-xlabel("time [s]")
+xlabel("orbits")
 ylabel("norm residual [km]")
 ylim([-5, 15]);
 
@@ -245,7 +244,7 @@ plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
 
 legend("Pre fit residual", "Post fit residual");
 ylim([-5, 15]);
-xlabel("time [s]")
+xlabel("orbits")
 ylabel("norm residual [km/s]")
 ylim([-0.01, 0.05]);
 

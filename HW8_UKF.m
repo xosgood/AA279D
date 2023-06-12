@@ -234,7 +234,6 @@ sgtitle("Pre and Post fit residuals verus time")
 subplot(2, 1, 1); hold on; grid on;
 plot(orbit_span, vecnorm(pre_fit_res(7:9,:)), ".");
 plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
-plot(orbit_span, position_confidence_interval);
 legend("Pre fit residual", "Post fit residual");
 xlabel("time [s]")
 ylabel("norm residual [km]")

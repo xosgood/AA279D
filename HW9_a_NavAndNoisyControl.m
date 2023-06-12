@@ -95,6 +95,9 @@ Sigma_0 = 0.01 * eye(n_dims_state); % initial covariance estimate
 Sigma(:,:,1) = Sigma_0;
 mu(:,1) = mu_0;
 
+pre_fit_res = zeros(m_dims_meas, n_iter); % pre fit residual
+post_fit_res = zeros(m_dims_meas, n_iter); % post fit residual
+
 
 for iter = 2:n_iter
     %%% ground truth (in ECI) propagation
@@ -148,8 +151,12 @@ for iter = 2:n_iter
     Sigma_xy = (weights .* (points - mu(:,iter))) * (y_preds - y_hat)'; % cross covariance between sigma-points and predicted measurements
     K = Sigma_xy / Sigma_yy; % "Kalman gain"
     mu(:,iter) = mu(:,iter) + K * (y(:,iter-1) - y_hat); % mean update
+
+    pre_fit_res(:,iter) = (y(:,iter-1) - y_hat);
+
     Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
     
+    post_fit_res(:,iter) = y(:,iter-1) - g(mu(:,iter), oe_c_osc_cur);
     %%% compute control for next timestep to use
     u(:,iter) = LyapunovController(roe_d_mean_cur_noisy, roe_desired, oe_c_mean_cur, lyap_params);
 end
@@ -208,6 +215,26 @@ subplot(3,2,3); ylim([-40, 40]);
 subplot(3,2,4); ylim([-10, 70]);
 subplot(3,2,5); ylim([-20, 20]);
 subplot(3,2,6); ylim([0, 50]);
+
+% Plot pre and post fit residuals.
+figure; 
+sgtitle("Pre and Post fit residuals verus time")
+subplot(2, 1, 1); hold on; grid on;
+plot(orbit_span, vecnorm(pre_fit_res(7:9,:)), "o");
+plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
+legend("Pre fit residual", "Post fit residual");
+xlabel("time [s]")
+ylabel("norm residual [km]")
+ylim([-5, 20]);
+
+subplot(2, 1, 2); hold on; grid on;
+plot(orbit_span, vecnorm(pre_fit_res(10:12,:)), "o");
+plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
+
+legend("Pre fit residual", "Post fit residual");
+xlabel("time [s]")
+ylabel("norm residual [km/s]")
+ylim([-0.01, 0.05]);
 
 %% functions
 % nonlinear dynamics

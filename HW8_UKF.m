@@ -248,7 +248,100 @@ xlabel("orbits")
 ylabel("norm residual [km/s]")
 ylim([-0.01, 0.05]);
 
+% plot state estimate error with covariance
+alpha = 1.96;
+figure;
+sgtitle("UKF absolute value error with 95% upper confidence bound");
+subplot(3,2,1); grid on; hold on;
+plot(orbit_span, a_c * err(1,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(1,1,:))));
+xlabel("orbits");
+ylabel("a \delta a error [km]");
+ylim([0, 10]);
+subplot(3,2,2); grid on; hold on;
+plot(orbit_span, a_c * err(2,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(2,2,:))));
+xlabel("orbits");
+ylabel("a \delta \lambda error [km]");
+ylim([0, 10]);
+legend("error", "upper 95% confidence bound");
+subplot(3,2,3); grid on; hold on;
+plot(orbit_span, a_c * err(3,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(3,3,:))));
+xlabel("orbits");
+ylabel("a \delta e_x error [km]");
+ylim([0, 10]);
+subplot(3,2,4); grid on; hold on;
+plot(orbit_span, a_c * err(4,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(4,4,:))));
+xlabel("orbits");
+ylabel("a \delta e_y error [km]");
+ylim([0, 10]);
+subplot(3,2,5); grid on; hold on;
+plot(orbit_span, a_c * err(5,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(5,5,:))));
+xlabel("orbits");
+ylabel("a \delta i_x error [km]");
+ylim([0, 5]);
+subplot(3,2,6); grid on; hold on;
+plot(orbit_span, a_c * err(6,:));
+plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(6,6,:))));
+xlabel("orbits");
+ylabel("a \delta i_y error [km]");
+ylim([0, 5]);
 
+% plot control input history
+figure;
+sgtitle("Delta-v components vs number of orbits passed");
+subplot(4,1,1);
+plot(orbit_span, 1000 * u(2,:));
+grid on;
+xlabel("orbits");
+ylabel("tangential delta-v (m/s)");
+subplot(4,1,2);
+plot(orbit_span, 1000 * u(3,:));
+grid on;
+xlabel("orbits");
+ylabel("normal delta-v (m/s)");
+subplot(4,1,3);
+plot(orbit_span, 1000 * vecnorm(u));
+grid on;
+xlabel("orbits");
+ylabel("magnitude of delta-v (m/s)");
+subplot(4,1,4);
+plot(orbit_span, 1000 * cumsum(vecnorm(u), 2));
+grid on;
+xlabel("orbits");
+ylabel("cumulative delta-v (m/s)");
+
+% plot control tracking error
+control_tracking_error = x_roe - roe_desired;
+figure;
+sgtitle("Control tracking error in ROE space");
+subplot(3,2,1); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(1,:));
+xlabel("orbits");
+ylabel("a \delta a [km]");
+subplot(3,2,2); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(2,:));
+xlabel("orbits");
+ylabel("a \delta \lambda control tracking error [km]");
+subplot(3,2,3); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(3,:));
+xlabel("orbits");
+ylabel("a \delta e_x control tracking error [km]");
+subplot(3,2,4); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(4,:));
+xlabel("orbits");
+ylabel("a \delta e_y control tracking error [km]");
+subplot(3,2,5); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(5,:));
+xlabel("orbits");
+ylabel("a \delta i_x control tracking error [km]");
+subplot(3,2,6); grid on; hold on;
+plot(orbit_span, a_c * control_tracking_error(6,:));
+xlabel("orbits");
+ylabel("a \delta i_y control tracking error [km]");
 
 %% functions
 % nonlinear dynamics

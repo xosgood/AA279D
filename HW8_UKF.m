@@ -161,6 +161,7 @@ for iter = 2:n_iter
     K = Sigma_xy / Sigma_yy; % "Kalman gain"
     mu(:,iter) = mu(:,iter) + K * (y(:,iter-1) - y_hat); % mean update
     Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
+    residual_post = y(:,iter-1) - g(mu(:,iter));
     
     %%% compute control for next timestep to use
     u(:,iter) = LyapunovController(roe_d_mean_cur, roe_desired, oe_c_mean_cur, lyap_params);

@@ -49,7 +49,7 @@ roe_d_osc = OE2ROE(oe_c_osc, oe_d_osc);
 x_d_osc_0 = [r_d_osc_0_ECI; v_d_osc_0_ECI];
 
 %% sim setup
-n_orbits = 25;
+n_orbits = 10;
 n_steps_per_orbit = 100;
 n_iter = n_steps_per_orbit * n_orbits;
 T = 2 * pi * sqrt(a_c^3 / mu_E);
@@ -62,11 +62,12 @@ options = odeset('RelTol', 1e-9, 'AbsTol', 1e-12);
 %% Lyapunov controller setup
 roe_desired = [0; 100; 0; 30; 0; 30] / a_c;
 lyap_params.N = 14; % exponent in P matrix
-lyap_params.k = [20; 20; 20; 6; 6]; % (1/k) factor in front of P matrix
+lyap_params.k = [10; 10; 10; 6; 6]; % (1/k) factor in front of P matrix
 lyap_params.u_lowerbound = 1e-6; % lower bound on control actuation
 lyap_params.u_upperbound = 1e-2; % upper bound on control actuation
 lyap_params.dlambda_thresh = 0.1 / a_c;
 lyap_params.dlambda_dot = 0.005 / a_c;
+low_pass_iterations = 4; % the number of iterations the low pass filter should average across
 
 %% UKF setup
 n_dims_state = 6; % number of dimensions of state
@@ -74,7 +75,7 @@ m_dims_meas = 12; % number of dimensions of measurement
 p_dims_controlinput = 3; % number of dimensions of control input
 
 Q = (0.02 / a_c) * eye(n_dims_state);
-R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e3); % eye(m_dims_meas);
+R = diag([10, 10, 10, .02, .02, .02, 10, 10, 10, .02, .02, .02] / 1e4); % eye(m_dims_meas);
 
 x_absolute = zeros(m_dims_meas, n_iter); % true absolute state (osculating), through simulating dynamics
 x_roe = zeros(n_dims_state, n_iter); % true relative state (osculating), through simulating dynamics
@@ -148,7 +149,14 @@ for iter = 2:n_iter
     Sigma(:,:,iter) = Sigma(:,:,iter) - K * Sigma_xy'; % covariance update
     
     %%% compute control for next timestep to use
-    u(:,iter) = LyapunovController(mu(:,iter), roe_desired, oe_c_mean_cur, lyap_params);
+    % add low pass filter (moving average)
+    if iter > low_pass_iterations
+        mu_cur_movingavg = mean(mu(:,iter-low_pass_iterations+1:iter), 2);
+    else
+        mu_cur_movingavg = mu(:,iter);
+    end
+    % compute control
+    u(:,iter) = LyapunovController(mu_cur_movingavg, roe_desired, oe_c_mean_cur, lyap_params);
 end
 
 %% plotting
@@ -159,38 +167,38 @@ plot(orbit_span, a_c * x_roe(1,:));
 plot(orbit_span, a_c * mu(1,:));
 plot(orbit_span(2:end), a_c * measured_roe(1,:));
 xlabel("time [s]");
-ylabel("a\delta a [km]")
+ylabel("a \delta a [km]")
 subplot(3,2,2); grid on; hold on;
 plot(orbit_span, a_c * x_roe(2,:));
 plot(orbit_span, a_c * mu(2,:));
 plot(orbit_span(2:end), a_c * measured_roe(2,:));
 legend("ground truth", "state estimate", "measured", "Location","Best");
 xlabel("time [s]");
-ylabel("a\delta \lambda [km]")
+ylabel("a \delta \lambda [km]")
 subplot(3,2,3); grid on; hold on;
 plot(orbit_span, a_c * x_roe(3,:));
 plot(orbit_span, a_c * mu(3,:));
 plot(orbit_span(2:end), a_c * measured_roe(3,:));
 xlabel("time [s]");
-ylabel("a\delta e_x [km]")
+ylabel("a \delta e_x [km]")
 subplot(3,2,4); grid on; hold on;
 plot(orbit_span, a_c * x_roe(4,:));
 plot(orbit_span, a_c * mu(4,:));
 plot(orbit_span(2:end), a_c * measured_roe(4,:));
 xlabel("time [s]");
-ylabel("a\delta e_y [km]")
+ylabel("a \delta e_y [km]")
 subplot(3,2,5); grid on; hold on;
 plot(orbit_span, a_c * x_roe(5,:));
 plot(orbit_span, a_c * mu(5,:));
 plot(orbit_span(2:end), a_c * measured_roe(5,:));
 xlabel("time [s]");
-ylabel("a\delta i_x [km]")
+ylabel("a \delta i_x [km]")
 subplot(3,2,6); grid on; hold on;
 plot(orbit_span, a_c * x_roe(6,:));
 plot(orbit_span, a_c * mu(6,:));
 plot(orbit_span(2:end), a_c * measured_roe(6,:));
 xlabel("time [s]");
-ylabel("a\delta i_y [km]")
+ylabel("a \delta i_y [km]")
 
 PlotConfidenceInterval(orbit_span, x_roe, mu, Sigma, a_c);
 % subplot(3,2,1); ylim([-70, 70]);

@@ -244,6 +244,26 @@ xlabel("orbits")
 ylabel("norm residual [km/s]")
 ylim([-0.01, 0.05]);
 
+% Plot post fit residual versus injected noise 
+position_confidence_level = 1.96 * sqrt(R(1,1) + R(2,2) + R(3,3));
+velocity_confidence_level = 1.96 * sqrt(R(4,4) + R(5,5) + R(6,6));
+
+figure;
+sgtitle("Post fit residual compared to injected noise")
+subplot(2, 1, 1); hold on; grid on;
+plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
+plot(orbit_span, position_confidence_level*ones(size(orbit_span)));
+ylim([0,0.15]);
+ylabel("position residual [km]");
+legend("Post fit residual", "95% confidence interval on injected noise.")
+
+subplot(2, 1, 2); hold on; grid on;
+plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
+plot(orbit_span, velocity_confidence_level*ones(size(orbit_span)));
+ylim([0,0.006]);
+xlabel("orbits")
+ylabel("velocity residual [km/s]")
+
 % plot state estimate error with covariance
 alpha = 1.96;
 figure;
@@ -312,6 +332,8 @@ ylabel("cumulative delta-v (m/s)");
 
 % plot control tracking error
 control_tracking_error = x_roe - roe_desired;
+
+
 figure;
 sgtitle("Control tracking error in ROE space");
 subplot(3,2,1); grid on; hold on;

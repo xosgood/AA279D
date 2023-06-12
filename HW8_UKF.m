@@ -168,6 +168,9 @@ for iter = 2:n_iter
     u(:,iter) = LyapunovController(roe_d_mean_cur, roe_desired, oe_c_mean_cur, lyap_params);
 end
 
+err = abs(mu - x_roe);
+err_avg_ss = mean(err(:,end-n_steps_per_orbit:end), 2);
+stddev_ss = std(err(:,end-n_steps_per_orbit:end), 0, 2);
 
 %% plotting
 figure;
@@ -224,9 +227,6 @@ subplot(3,2,3); ylim([-40, 40]);
 subplot(3,2,4); ylim([-10, 70]);
 subplot(3,2,5); ylim([-20, 20]);
 subplot(3,2,6); ylim([0, 50]);
-
-position_confidence_interval = 1.96 * reshape(sqrt(Sigma(1,1,:) + Sigma(2,2,:) + Sigma(3,3,:)),[1,n_iter]);
-velocity_confidence_interval = 1.96 * reshape(sqrt(Sigma(4,4,:) + Sigma(5,5,:) + Sigma(6,6,:)), [1,n_iter]);
 
 figure; 
 sgtitle("Pre and Post fit residuals verus time")
@@ -289,6 +289,28 @@ plot(orbit_span, alpha * a_c * squeeze(sqrt(Sigma(6,6,:))));
 xlabel("orbits");
 ylabel("a \delta i_y error [km]");
 ylim([0, 5]);
+
+% Plot post fit residual versus injected noise 
+position_confidence_level = 1.96 * sqrt(R(1,1) + R(2,2) + R(3,3));
+velocity_confidence_level = 1.96 * sqrt(R(4,4) + R(5,5) + R(6,6));
+
+figure;
+sgtitle("Post fit residual compared to injected noise")
+subplot(2, 1, 1); hold on; grid on;
+plot(orbit_span, vecnorm(post_fit_res(7:9,:)), ".red");
+plot(orbit_span, position_confidence_level*ones(size(orbit_span)));
+ylim([0,0.4]);
+ylabel("position residual [km]");
+legend("Post fit residual", "95% confidence interval on injected noise.")
+
+subplot(2, 1, 2); hold on; grid on;
+plot(orbit_span, vecnorm(post_fit_res(10:12,:)), ".red");
+plot(orbit_span, velocity_confidence_level*ones(size(orbit_span)));
+ylim([0,0.02]);
+xlabel("orbits")
+ylabel("velocity residual [km/s]")
+
+
 
 % plot control input history
 figure;

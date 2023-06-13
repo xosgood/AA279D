@@ -163,6 +163,8 @@ for iter = 2:n_iter
     end
     % compute control
     u(:,iter) = LyapunovController(mu_cur_movingavg, roe_desired, oe_c_mean_cur, lyap_params);
+    % add noise to control actuation
+    %u(:,iter) = u(:,iter) + mvnrnd([0;0;0],diag([0e-9, 2e-7, 2e-7]))';
 end
 
 err = abs(mu - x_roe);
